@@ -278,25 +278,45 @@ export class UIManager {
    */
   bindCallbacks(callbacks) {
     if (callbacks.onStart) {
-      this.elements.btnStart.onclick = callbacks.onStart;
+      this.elements.btnStart.onclick = () => {
+        console.log('🎮 Start button clicked');
+        callbacks.onStart();
+      };
     }
     if (callbacks.onThrow) {
-      this.elements.btnThrow.onclick = callbacks.onThrow;
+      this.elements.btnThrow.onclick = () => {
+        console.log('🎾 Throw button clicked');
+        callbacks.onThrow();
+      };
     }
     if (callbacks.onResume) {
-      this.elements.btnResume.onclick = callbacks.onResume;
+      this.elements.btnResume.onclick = () => {
+        console.log('▶️ Resume button clicked');
+        callbacks.onResume();
+      };
     }
     if (callbacks.onNextLevel) {
-      this.elements.btnNextLevel.onclick = callbacks.onNextLevel;
+      this.elements.btnNextLevel.onclick = () => {
+        console.log('⏭️ Next Level button clicked');
+        callbacks.onNextLevel();
+      };
     }
     if (callbacks.onRestart) {
-      this.elements.btnRestart.onclick = callbacks.onRestart;
-      this.elements.btnRestartPaused.onclick = callbacks.onRestart;
+      const restartHandler = () => {
+        console.log('🔄 Restart button clicked');
+        callbacks.onRestart();
+      };
+      this.elements.btnRestart.onclick = restartHandler;
+      this.elements.btnRestartPaused.onclick = restartHandler;
     }
     if (callbacks.onMenu) {
-      this.elements.btnMenu.onclick = callbacks.onMenu;
-      this.elements.btnMenuGameover.onclick = callbacks.onMenu;
-      this.elements.btnMenuPaused.onclick = callbacks.onMenu;
+      const menuHandler = () => {
+        console.log('🏠 Menu button clicked');
+        callbacks.onMenu();
+      };
+      this.elements.btnMenu.onclick = menuHandler;
+      this.elements.btnMenuGameover.onclick = menuHandler;
+      this.elements.btnMenuPaused.onclick = menuHandler;
     }
   }
 

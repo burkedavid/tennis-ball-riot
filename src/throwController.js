@@ -169,11 +169,11 @@ export class ThrowController {
 
     this.dragCurrent = { x: pos.x, y: pos.y };
 
-    // Calculate raw drag vector (INVERTED for intuitive feel)
-    // Drag DOWN = throw UP
+    // Calculate raw drag vector (DIRECT - flick toward target)
+    // Flick UP (toward glass) = ball goes UP
     this.dragVector = {
-      x: -(this.dragCurrent.x - this.dragStart.x),
-      y: -(this.dragCurrent.y - this.dragStart.y)
+      x: this.dragCurrent.x - this.dragStart.x,
+      y: this.dragCurrent.y - this.dragStart.y
     };
 
     // Apply smoothing
@@ -226,17 +226,10 @@ export class ThrowController {
 
     // Only throw if flicked far enough
     if (dragDistance >= THROW_CONFIG.MIN_DRAG_DISTANCE) {
-      // Calculate flick velocity (distance / time) for more natural feel
-      const flickSpeed = Math.min(dragDistance / (flickDuration / 100), 3); // Cap multiplier
       const velocity = this.calculateThrowVelocity();
-
-      // Boost velocity based on flick speed
-      velocity.x *= (0.7 + flickSpeed * 0.3); // Faster flicks = more power
-      velocity.y *= (0.7 + flickSpeed * 0.3);
-
       const force = this.calculateThrowForce();
 
-      console.log(`👆 THROWING! Flick: ${dragDistance.toFixed(0)}px in ${flickDuration}ms, speed: ${flickSpeed.toFixed(2)}x`);
+      console.log(`👆 THROWING! Flick: ${dragDistance.toFixed(0)}px in ${flickDuration}ms`);
       console.log(`🚀 Velocity: (${velocity.x.toFixed(2)}, ${velocity.y.toFixed(2)}), Force: ${force.toFixed(2)}`);
 
       if (this.onThrowCallback) {
@@ -332,7 +325,7 @@ export class ThrowController {
     // Simple approach: Use the flick vector directly with a small multiplier
     // The smoothedVector is already in pixels, so we just need to scale it down
     // to reasonable game velocities
-    const velocityMultiplier = 0.06; // Tune this for throw distance
+    const velocityMultiplier = 0.08; // Increased since we removed speed boost
 
     const velocity = {
       x: this.smoothedVector.x * velocityMultiplier,
