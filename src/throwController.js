@@ -11,11 +11,11 @@ import { lerp } from './utils.js';
 export const THROW_CONFIG = {
   // Drag limits
   MIN_DRAG_DISTANCE: 30,        // Minimum pixels to register throw
-  MAX_DRAG_DISTANCE: 200,       // Maximum drag length for max power
+  MAX_DRAG_DISTANCE: 250,       // Maximum drag length for max power (increased for more range)
 
-  // Power scaling - SLOWER for better visibility
-  MIN_THROW_FORCE: 6,           // Minimum velocity (was 8)
-  MAX_THROW_FORCE: 15,          // Maximum velocity (was 20) - SLOWER!
+  // Power scaling - BALANCED for reachability
+  MIN_THROW_FORCE: 6,           // Minimum velocity
+  MAX_THROW_FORCE: 20,          // Maximum velocity - enough power to reach glass!
 
   // Angle constraints
   MIN_THROW_ANGLE: -85,         // Degrees (almost straight up)
@@ -325,7 +325,7 @@ export class ThrowController {
     // Simple approach: Use the flick vector directly with a small multiplier
     // The smoothedVector is already in pixels, so we just need to scale it down
     // to reasonable game velocities
-    const velocityMultiplier = 0.07; // Balanced speed - visible but can reach target
+    const velocityMultiplier = 0.12; // INCREASED for more power - ball can now reach glass!
 
     const velocity = {
       x: this.smoothedVector.x * velocityMultiplier,
@@ -405,16 +405,24 @@ class DragArrowVisual {
     const endX = dragStart.x + smoothedVector.x;
     const endY = dragStart.y + smoothedVector.y;
 
-    // Arrow line
-    this.line.lineStyle(5, 0xFFFFFF, 0.9);
+    // Calculate angle for color guidance (aim toward top-left for glass at x=600)
+    const angle = Math.atan2(smoothedVector.y, smoothedVector.x);
+    const angleInDegrees = angle * (180 / Math.PI);
+
+    // Good angle is upward (negative Y) and rightward (positive X) for glass target
+    // Ideal range: -45 to -85 degrees (up-right diagonal to mostly vertical)
+    const isGoodAngle = smoothedVector.y < 0 && angleInDegrees < -20; // Upward with some arc
+    const lineColor = isGoodAngle ? 0x00FF00 : 0xFF9900; // Green = good, Orange = adjust
+
+    // Arrow line with color feedback
+    this.line.lineStyle(5, lineColor, 0.9);
     this.line.moveTo(dragStart.x, dragStart.y);
     this.line.lineTo(endX, endY);
 
-    // Arrow head
-    const angle = Math.atan2(smoothedVector.y, smoothedVector.x);
+    // Arrow head (using same angle calculated above)
     const headSize = 20;
 
-    this.arrowHead.beginFill(0xFFFFFF, 0.9);
+    this.arrowHead.beginFill(lineColor, 0.9); // Match arrow color
     this.arrowHead.moveTo(endX, endY);
     this.arrowHead.lineTo(
       endX - headSize * Math.cos(angle - Math.PI / 6),
