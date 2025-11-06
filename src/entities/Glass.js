@@ -253,11 +253,11 @@ export class Glass {
       this.physicsWorld.removeBody(this.sensor);
       this.sensor = null;
     }
-    if (this.graphics) {
+    if (this.graphics && !this.graphics.destroyed) {
       this.graphics.destroy();
       this.graphics = null;
     }
-    if (this.glowGraphics) {
+    if (this.glowGraphics && !this.glowGraphics.destroyed) {
       this.glowGraphics.destroy();
       this.glowGraphics = null;
     }

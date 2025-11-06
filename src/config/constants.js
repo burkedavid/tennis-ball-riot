@@ -45,15 +45,15 @@ export const SCORING = {
 };
 
 // Entity Sizes and Positions
-// SIDE VIEW PERSPECTIVE - Like watching a concert from Row 10
+// SIDE VIEW PERSPECTIVE - Like watching a concert from the middle of the crowd
 // Stage backdrop at top (0-400), stage floor at y=400
-// Crowd heads in middle (450-650), you at bottom (750)
+// Crowd surrounds you (450-800), YOU in the middle at y=550 - room to pull back!
 export const ENTITIES = {
   ball: {
     radius: 15,
     color: 0x9FCD2A, // Tennis ball green
-    startX: CANVAS_WIDTH / 2,        // Center bottom (where YOU stand)
-    startY: CANVAS_HEIGHT - 50,      // Bottom of screen (you throwing)
+    startX: CANVAS_WIDTH / 2,        // Center (where YOU stand IN THE CROWD)
+    startY: 550,                     // MIDDLE of crowd - LOTS of room to pull down! (was 750)
   },
   glass: {
     width: 90,                       // BIGGER glass (was 60)
@@ -98,10 +98,10 @@ export const ENTITIES = {
     backdropColor: 0x1a0a2e,         // Dark purple stage backdrop
   },
   audience: {
-    startY: 450,                     // Crowd silhouettes (foreground)
-    height: 250,
+    startY: 450,                     // Crowd starts below stage
+    height: 350,                     // All the way to bottom (was 250)
     color: 0x000000,
-    headRows: 3,                     // Rows of crowd heads
+    headRows: 5,                     // MORE rows (was 3) - you're IN the crowd!
     headCols: 25,                    // Columns across
   }
 };

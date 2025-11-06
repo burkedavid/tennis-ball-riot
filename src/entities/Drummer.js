@@ -243,7 +243,7 @@ export class Drummer {
    * Clean up
    */
   destroy() {
-    if (this.graphics) {
+    if (this.graphics && !this.graphics.destroyed) {
       this.graphics.destroy();
       this.graphics = null;
     }

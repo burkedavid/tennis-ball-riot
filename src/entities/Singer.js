@@ -377,7 +377,7 @@ export class Singer {
       this.physicsWorld.removeBody(this.body);
       this.body = null;
     }
-    if (this.graphics) {
+    if (this.graphics && !this.graphics.destroyed) {
       this.graphics.destroy();
       this.graphics = null;
     }

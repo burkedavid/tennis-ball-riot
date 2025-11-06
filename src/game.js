@@ -4,7 +4,6 @@
  */
 
 import * as PIXI from 'pixi.js';
-import gsap from 'gsap';
 import { PhysicsWorld } from './physics.js';
 import { Ball } from './entities/Ball.js';
 import { Singer } from './entities/Singer.js';
@@ -510,15 +509,8 @@ export class Game {
     this.readyBallGraphics.drawCircle(x - radius * 0.3, y - radius * 0.3, radius * 0.25);
     this.readyBallGraphics.endFill();
 
-    // Add pulsing animation to draw attention
-    gsap.to(this.readyBallGraphics.scale, {
-      x: 1.1,
-      y: 1.1,
-      duration: 0.8,
-      yoyo: true,
-      repeat: -1,
-      ease: "sine.inOut"
-    });
+    // NO ANIMATION - Keep ball stationary to avoid confusion for beginners
+    // (Animation removed to make it easier to learn slingshot controls)
 
     this.gameContainer.addChild(this.readyBallGraphics);
   }
@@ -574,11 +566,24 @@ export class Game {
     const cols = ENTITIES.audience.headCols;
     const spacing = CANVAS_WIDTH / cols;
 
+    // Player position - skip crowd here so there's space for YOU
+    const playerX = ENTITIES.ball.startX;
+    const playerY = ENTITIES.ball.startY;
+    const clearRadius = 60; // Clear space around player
+
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
         const x = col * spacing + spacing / 2 + randomRange(-15, 15);
         const baseY = ENTITIES.audience.startY + 20;
         const y = baseY + (row * 70) + randomRange(-10, 10);
+
+        // Skip crowd members too close to player position
+        const distToPlayer = Math.sqrt(
+          Math.pow(x - playerX, 2) + Math.pow(y - playerY, 2)
+        );
+        if (distToPlayer < clearRadius) {
+          continue; // Skip this crowd member - it's where YOU are!
+        }
 
         // Size increases as they get closer (bottom rows = closer = bigger)
         const sizeMult = 1 + (row * 0.4);

@@ -254,7 +254,7 @@ export class Obstacle {
       this.body = null;
     }
 
-    if (this.graphics) {
+    if (this.graphics && !this.graphics.destroyed) {
       this.graphics.destroy();
       this.graphics = null;
     }
