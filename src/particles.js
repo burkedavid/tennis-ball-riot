@@ -76,7 +76,7 @@ export class ParticleSystem {
   }
 
   /**
-   * Create splash effect
+   * Create splash effect (HUGE for glass hits!)
    * @param {number} x
    * @param {number} y
    */
@@ -85,11 +85,11 @@ export class ParticleSystem {
 
     for (let i = 0; i < config.count; i++) {
       const angle = (Math.PI * 2 * i) / config.count;
-      const speed = randomRange(2, 6);
+      const speed = randomRange(4, 12);       // MUCH faster (was 2-6)
       const vx = Math.cos(angle) * speed;
-      const vy = Math.sin(angle) * speed - 3; // Upward bias
+      const vy = Math.sin(angle) * speed - 6; // BIGGER upward bias (was -3)
       const color = config.colors[Math.floor(Math.random() * config.colors.length)];
-      const size = randomRange(3, 7);
+      const size = randomRange(6, 14);        // MUCH BIGGER particles (was 3-7)
 
       const particle = new Particle(x, y, vx, vy, color, config.lifetime, size);
       this.particles.push(particle);

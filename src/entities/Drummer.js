@@ -81,63 +81,104 @@ export class Drummer {
     // Draw drum kit first (behind drummer)
     this.drawDrumKit();
 
-    // Head
-    this.graphics.beginFill(0xFFCC99);
-    this.graphics.drawCircle(0, -halfHeight - 15, 20);
+    // Long rock hair (behind head)
+    this.graphics.beginFill(0x2a2a2a);
+    for (let i = -2; i <= 2; i++) {
+      this.graphics.drawEllipse(i * 9, -halfHeight - 22, 9, 16);
+    }
+    this.graphics.drawEllipse(0, -halfHeight - 28, 20, 12);
     this.graphics.endFill();
 
-    // Hair (wild rock hair)
-    this.graphics.beginFill(0x333333);
-    this.graphics.drawCircle(-10, -halfHeight - 25, 12);
-    this.graphics.drawCircle(0, -halfHeight - 28, 12);
-    this.graphics.drawCircle(10, -halfHeight - 25, 12);
+    // Neck
+    this.graphics.lineStyle(0);
+    this.graphics.beginFill(0xF5C79C);
+    this.graphics.drawRect(-6, -halfHeight - 8, 12, 15);
     this.graphics.endFill();
 
-    // Eyes
+    // Head (rounder)
+    this.graphics.beginFill(0xF5C79C);
+    this.graphics.drawCircle(0, -halfHeight - 18, 18);
+    this.graphics.endFill();
+
+    // Headband (rock drummer style)
+    this.graphics.lineStyle(0);
+    this.graphics.beginFill(0xFF0000);
+    this.graphics.drawRect(-20, -halfHeight - 22, 40, 6);
+    this.graphics.endFill();
+
+    // Eyes (intense focus)
+    this.graphics.beginFill(0xFFFFFF);
+    this.graphics.drawCircle(-6, -halfHeight - 18, 4);
+    this.graphics.drawCircle(6, -halfHeight - 18, 4);
+    this.graphics.endFill();
     this.graphics.beginFill(0x000000);
-    this.graphics.drawCircle(-7, -halfHeight - 15, 3);
-    this.graphics.drawCircle(7, -halfHeight - 15, 3);
+    this.graphics.drawCircle(-6, -halfHeight - 17, 3);
+    this.graphics.drawCircle(6, -halfHeight - 17, 3);
     this.graphics.endFill();
 
     // Mouth (changes based on state)
     if (this.isHappy) {
-      // Smile
-      this.graphics.lineStyle(2, 0x000000);
-      this.graphics.arc(0, -halfHeight - 8, 8, 0, Math.PI);
+      // Big smile
+      this.graphics.lineStyle(2, 0x880000);
+      this.graphics.arc(0, -halfHeight - 10, 8, 0, Math.PI);
     } else {
-      // Neutral
-      this.graphics.lineStyle(2, 0x000000);
-      this.graphics.moveTo(-5, -halfHeight - 5);
-      this.graphics.lineTo(5, -halfHeight - 5);
+      // Focused expression
+      this.graphics.lineStyle(2, 0x880000);
+      this.graphics.moveTo(-6, -halfHeight - 10);
+      this.graphics.lineTo(6, -halfHeight - 10);
     }
 
-    // Body
+    // Body - Tank top with rounded shoulders
+    this.graphics.lineStyle(0);
     this.graphics.beginFill(ENTITIES.drummer.color);
-    this.graphics.drawRoundedRect(-halfWidth, -halfHeight + 5, this.width, this.height * 0.7, 5);
+    // Shoulders
+    this.graphics.drawCircle(-halfWidth + 10, -halfHeight + 12, 14);
+    this.graphics.drawCircle(halfWidth - 10, -halfHeight + 12, 14);
+    // Torso
+    this.graphics.drawRoundedRect(-halfWidth + 8, -halfHeight + 5, this.width - 16, this.height * 0.65, 10);
     this.graphics.endFill();
 
-    // Arms (drumsticks)
+    // Arms (drumsticks) - more natural with elbows
     const armOffset = Math.sin(this.animationFrame) * 10;
 
-    // Left arm with stick
-    this.graphics.lineStyle(4, 0xFFCC99);
-    this.graphics.moveTo(-halfWidth + 10, -halfHeight + 20);
-    this.graphics.lineTo(-halfWidth - 20, -halfHeight + 30 + armOffset);
+    this.graphics.lineStyle(8, 0xF5C79C);
+    this.graphics.lineCap = 'round';
 
-    // Drumstick
-    this.graphics.lineStyle(3, 0x8B4513);
-    this.graphics.moveTo(-halfWidth - 20, -halfHeight + 30 + armOffset);
-    this.graphics.lineTo(-halfWidth - 35, -halfHeight + 35 + armOffset);
+    // Left arm (upper)
+    this.graphics.moveTo(-halfWidth + 10, -halfHeight + 12);
+    this.graphics.lineTo(-halfWidth - 10, -halfHeight + 35 + armOffset * 0.5);
+    // Left forearm
+    this.graphics.moveTo(-halfWidth - 10, -halfHeight + 35 + armOffset * 0.5);
+    this.graphics.lineTo(-halfWidth - 25, -halfHeight + 45 + armOffset);
 
-    // Right arm with stick
-    this.graphics.lineStyle(4, 0xFFCC99);
-    this.graphics.moveTo(halfWidth - 10, -halfHeight + 20);
-    this.graphics.lineTo(halfWidth + 20, -halfHeight + 30 - armOffset);
+    // Drumstick (left)
+    this.graphics.lineStyle(4, 0x8B4513);
+    this.graphics.moveTo(-halfWidth - 25, -halfHeight + 45 + armOffset);
+    this.graphics.lineTo(-halfWidth - 42, -halfHeight + 50 + armOffset);
+    // Stick tip
+    this.graphics.lineStyle(0);
+    this.graphics.beginFill(0xFFEEDD);
+    this.graphics.drawCircle(-halfWidth - 42, -halfHeight + 50 + armOffset, 4);
+    this.graphics.endFill();
 
-    // Drumstick
-    this.graphics.lineStyle(3, 0x8B4513);
-    this.graphics.moveTo(halfWidth + 20, -halfHeight + 30 - armOffset);
-    this.graphics.lineTo(halfWidth + 35, -halfHeight + 35 - armOffset);
+    // Right arm (upper)
+    this.graphics.lineStyle(8, 0xF5C79C);
+    this.graphics.lineCap = 'round';
+    this.graphics.moveTo(halfWidth - 10, -halfHeight + 12);
+    this.graphics.lineTo(halfWidth + 10, -halfHeight + 35 - armOffset * 0.5);
+    // Right forearm
+    this.graphics.moveTo(halfWidth + 10, -halfHeight + 35 - armOffset * 0.5);
+    this.graphics.lineTo(halfWidth + 25, -halfHeight + 45 - armOffset);
+
+    // Drumstick (right)
+    this.graphics.lineStyle(4, 0x8B4513);
+    this.graphics.moveTo(halfWidth + 25, -halfHeight + 45 - armOffset);
+    this.graphics.lineTo(halfWidth + 42, -halfHeight + 50 - armOffset);
+    // Stick tip
+    this.graphics.lineStyle(0);
+    this.graphics.beginFill(0xFFEEDD);
+    this.graphics.drawCircle(halfWidth + 42, -halfHeight + 50 - armOffset, 4);
+    this.graphics.endFill();
 
     // Position graphics
     this.graphics.x = this.x;

@@ -58,17 +58,19 @@ export class Singer {
     const halfWidth = this.width / 2;
     const halfHeight = this.height / 2;
 
-    // WILD SPIKY HAIR (Iggy's iconic messy look)
+    // WILD SPIKY HAIR (Iggy's iconic messy look) - Fixed pattern
     this.graphics.beginFill(0x1a1a1a); // Dark brown/black
-    // Multiple wild spikes in different directions
-    for (let i = -3; i <= 3; i++) {
-      const spikeX = i * 7;
-      const spikeHeight = 12 + Math.random() * 8;
-      const spikeOffset = Math.random() * 5 - 2.5;
-      this.graphics.drawCircle(spikeX + spikeOffset, -halfHeight - 28 - spikeHeight, 7);
-    }
-    // Add more wild hair volume
-    this.graphics.drawEllipse(0, -halfHeight - 30, 22, 12);
+    // Base hair volume
+    this.graphics.drawEllipse(0, -halfHeight - 28, 24, 14);
+    // Wild spikes - non-random for consistency
+    this.graphics.drawCircle(-15, -halfHeight - 32, 8);
+    this.graphics.drawCircle(-8, -halfHeight - 36, 7);
+    this.graphics.drawCircle(0, -halfHeight - 38, 8);
+    this.graphics.drawCircle(8, -halfHeight - 36, 7);
+    this.graphics.drawCircle(15, -halfHeight - 32, 8);
+    // Side volume
+    this.graphics.drawCircle(-20, -halfHeight - 25, 9);
+    this.graphics.drawCircle(20, -halfHeight - 25, 9);
     this.graphics.endFill();
 
     // Neck (visible, skinny)

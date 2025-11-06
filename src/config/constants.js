@@ -56,12 +56,12 @@ export const ENTITIES = {
     startY: CANVAS_HEIGHT - 50,      // Bottom of screen (you throwing)
   },
   glass: {
-    width: 60,
-    height: 80,
+    width: 90,                       // BIGGER glass (was 60)
+    height: 120,                     // TALLER glass (was 80)
     x: 1000,                         // Right side of stage (on drum kit)
     y: 310,                          // On stage, above drums
     color: 0x88ccff,
-    targetZoneRadius: 50,
+    targetZoneRadius: 70,            // BIGGER target zone (was 50)
   },
   drummer: {
     width: 100,
@@ -139,9 +139,9 @@ export const ANIMATION_DURATIONS = {
 // Particle Configuration
 export const PARTICLES = {
   splash: {
-    count: 20,
-    colors: [0x88ccff, 0x66aaff, 0xaaddff],
-    lifetime: 1,
+    count: 80,                       // HUGE SPLASH (was 20)
+    colors: [0x88ccff, 0x66aaff, 0xaaddff, 0xFFFFFF, 0x00FFFF],
+    lifetime: 1.5,                   // Longer lasting (was 1)
   },
   confetti: {
     count: 50,
