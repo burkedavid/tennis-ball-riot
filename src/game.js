@@ -265,6 +265,8 @@ export class Game {
    * Start the game
    */
   startGame() {
+    const totalLevels = getTotalLevels();
+    console.log(`🎮 START GAME - Total levels: ${totalLevels}`);
     this.currentLevel = 1;
     this.score = 0;
     this.loadLevel(this.currentLevel);
@@ -277,11 +279,13 @@ export class Game {
    * @param {number} levelNum
    */
   loadLevel(levelNum) {
+    console.log(`📂 LOAD LEVEL ${levelNum} - Total levels: ${getTotalLevels()}`);
     // Clear existing entities
     this.clearLevel();
 
     // Get level config
     const levelConfig = getLevelConfig(levelNum);
+    console.log(`📋 Level config loaded: ${levelConfig.name} (ID: ${levelConfig.id})`);
     this.currentLevel = levelNum;
     this.goalShots = levelConfig.goalShots;
     this.ballsRemaining = levelConfig.startingBalls;
