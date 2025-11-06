@@ -273,50 +273,82 @@ export class UIManager {
   }
 
   /**
-   * Bind button callbacks
+   * Bind button callbacks with mobile-friendly touch events
    * @param {Object} callbacks
    */
   bindCallbacks(callbacks) {
-    if (callbacks.onStart) {
-      this.elements.btnStart.onclick = () => {
-        console.log('🎮 Start button clicked');
-        callbacks.onStart();
+    // Helper to bind both click and touch events for mobile compatibility
+    const bindButtonEvents = (button, handler, logMessage) => {
+      if (!button) return;
+
+      const eventHandler = (e) => {
+        e.preventDefault(); // Prevent default behavior
+        e.stopPropagation(); // Stop event bubbling
+        console.log(logMessage);
+        handler();
       };
+
+      // Bind both click and touchend for maximum compatibility
+      button.addEventListener('click', eventHandler);
+      button.addEventListener('touchend', eventHandler);
+    };
+
+    if (callbacks.onStart) {
+      bindButtonEvents(
+        this.elements.btnStart,
+        callbacks.onStart,
+        '🎮 Start button clicked'
+      );
     }
     if (callbacks.onThrow) {
-      this.elements.btnThrow.onclick = () => {
-        console.log('🎾 Throw button clicked');
-        callbacks.onThrow();
-      };
+      bindButtonEvents(
+        this.elements.btnThrow,
+        callbacks.onThrow,
+        '🎾 Throw button clicked'
+      );
     }
     if (callbacks.onResume) {
-      this.elements.btnResume.onclick = () => {
-        console.log('▶️ Resume button clicked');
-        callbacks.onResume();
-      };
+      bindButtonEvents(
+        this.elements.btnResume,
+        callbacks.onResume,
+        '▶️ Resume button clicked'
+      );
     }
     if (callbacks.onNextLevel) {
-      this.elements.btnNextLevel.onclick = () => {
-        console.log('⏭️ Next Level button clicked');
-        callbacks.onNextLevel();
-      };
+      bindButtonEvents(
+        this.elements.btnNextLevel,
+        callbacks.onNextLevel,
+        '⏭️ Next Level button clicked'
+      );
     }
     if (callbacks.onRestart) {
-      const restartHandler = () => {
-        console.log('🔄 Restart button clicked');
-        callbacks.onRestart();
-      };
-      this.elements.btnRestart.onclick = restartHandler;
-      this.elements.btnRestartPaused.onclick = restartHandler;
+      bindButtonEvents(
+        this.elements.btnRestart,
+        callbacks.onRestart,
+        '🔄 Restart button clicked'
+      );
+      bindButtonEvents(
+        this.elements.btnRestartPaused,
+        callbacks.onRestart,
+        '🔄 Restart button clicked (paused)'
+      );
     }
     if (callbacks.onMenu) {
-      const menuHandler = () => {
-        console.log('🏠 Menu button clicked');
-        callbacks.onMenu();
-      };
-      this.elements.btnMenu.onclick = menuHandler;
-      this.elements.btnMenuGameover.onclick = menuHandler;
-      this.elements.btnMenuPaused.onclick = menuHandler;
+      bindButtonEvents(
+        this.elements.btnMenu,
+        callbacks.onMenu,
+        '🏠 Menu button clicked'
+      );
+      bindButtonEvents(
+        this.elements.btnMenuGameover,
+        callbacks.onMenu,
+        '🏠 Menu button clicked (game over)'
+      );
+      bindButtonEvents(
+        this.elements.btnMenuPaused,
+        callbacks.onMenu,
+        '🏠 Menu button clicked (paused)'
+      );
     }
   }
 
