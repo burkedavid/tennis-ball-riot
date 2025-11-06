@@ -62,7 +62,7 @@ export class Particle {
   }
 
   destroy() {
-    if (this.graphics) {
+    if (this.graphics && !this.graphics.destroyed) {
       this.graphics.destroy();
       this.graphics = null;
     }
