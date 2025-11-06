@@ -12,6 +12,7 @@ import { Drummer } from './entities/Drummer.js';
 import { BandMember } from './entities/BandMember.js';
 import { ParticleSystem } from './particles.js';
 import { UIManager } from './ui.js';
+import { ThrowController } from './throwController.js';
 import * as Animations from './animations.js';
 import { getLevelConfig, getTotalLevels } from './config/levelData.js';
 import {
@@ -36,6 +37,7 @@ export class Game {
     this.physics = new PhysicsWorld();
     this.particles = null;
     this.ui = new UIManager();
+    this.throwController = null;
 
     // Game State
     this.state = GAME_STATES.MENU;
@@ -93,6 +95,17 @@ export class Game {
 
     // Initialize particle system
     this.particles = new ParticleSystem(this.gameContainer);
+
+    // Initialize throw controller
+    this.throwController = new ThrowController(
+      ENTITIES.ball.startX,
+      ENTITIES.ball.startY
+    );
+    this.throwController.initVisuals(this.gameContainer);
+    this.throwController.setupEventListeners(this.app.view);
+    this.throwController.setOnThrowCallback((velocity, force) => {
+      this.throwBallWithVelocity(velocity, force);
+    });
 
     // Setup UI callbacks
     this.setupUICallbacks();
@@ -195,6 +208,9 @@ export class Game {
     // Create audience area (visual only)
     this.createAudience();
 
+    // Create ready ball indicator (visual only, shows where to throw from)
+    this.createReadyBallIndicator();
+
     // Setup crowd bumps
     this.crowdBumpFrequency =
       GAME_BALANCE.crowdBumpInterval * levelConfig.crowdBumpFrequency;
@@ -202,6 +218,9 @@ export class Game {
 
     // Update UI
     this.updateUI();
+
+    // Enable drag mode (hide sliders, show drag instructions)
+    this.ui.enableDragMode();
 
     // Reset flags
     this.canThrow = true;
@@ -330,6 +349,49 @@ export class Game {
       CANVAS_HEIGHT,
       'rightWall'
     );
+  }
+
+  /**
+   * Create ready ball indicator (shows where to drag from)
+   */
+  createReadyBallIndicator() {
+    // Create a visual ball at the throw position
+    this.readyBallGraphics = new PIXI.Graphics();
+
+    const radius = ENTITIES.ball.radius;
+    const x = ENTITIES.ball.startX;
+    const y = ENTITIES.ball.startY;
+
+    // Ball outer circle - BRIGHT GREEN tennis ball
+    this.readyBallGraphics.beginFill(0x9FCD2A); // Tennis ball green
+    this.readyBallGraphics.drawCircle(x, y, radius);
+    this.readyBallGraphics.endFill();
+
+    // Tennis ball seam lines (white curves)
+    this.readyBallGraphics.lineStyle(3, 0xFFFFFF, 0.8);
+
+    // Left curve
+    this.readyBallGraphics.arc(x, y, radius * 0.6, -Math.PI / 3, Math.PI / 3);
+
+    // Right curve
+    this.readyBallGraphics.arc(x, y, radius * 0.6, Math.PI * 2 / 3, Math.PI * 4 / 3);
+
+    // Highlight for 3D effect
+    this.readyBallGraphics.beginFill(0xFFFFFF, 0.4);
+    this.readyBallGraphics.drawCircle(x - radius * 0.3, y - radius * 0.3, radius * 0.25);
+    this.readyBallGraphics.endFill();
+
+    // Add pulsing animation to draw attention
+    gsap.to(this.readyBallGraphics.scale, {
+      x: 1.1,
+      y: 1.1,
+      duration: 0.8,
+      yoyo: true,
+      repeat: -1,
+      ease: "sine.inOut"
+    });
+
+    this.gameContainer.addChild(this.readyBallGraphics);
   }
 
   /**
@@ -462,6 +524,9 @@ export class Game {
       this.bassist.destroy();
       this.bassist = null;
     }
+    if (this.readyBallGraphics) {
+      this.readyBallGraphics = null;
+    }
 
     // Clear particles
     this.particles.clear();
@@ -471,7 +536,50 @@ export class Game {
   }
 
   /**
-   * Throw the ball
+   * Throw the ball with velocity from drag controller
+   */
+  throwBallWithVelocity(velocity, force) {
+    if (!this.canThrow || this.ballInFlight || this.state !== GAME_STATES.PLAYING) {
+      return;
+    }
+
+    if (this.ballsRemaining <= 0) {
+      return;
+    }
+
+    // Hide drag instructions while ball is in flight
+    this.ui.hideDragInstructions();
+
+    // Hide ready ball indicator
+    if (this.readyBallGraphics) {
+      this.readyBallGraphics.visible = false;
+    }
+
+    // Create ball
+    this.activeBall = new Ball(
+      this.physics,
+      ENTITIES.ball.startX,
+      ENTITIES.ball.startY
+    );
+    this.gameContainer.addChild(this.activeBall.getGraphics());
+
+    // Throw ball with velocity vector
+    this.activeBall.throwWithVelocity(velocity.x, velocity.y);
+
+    // Update state
+    this.ballsRemaining--;
+    this.ballInFlight = true;
+    this.canThrow = false;
+
+    // Update UI
+    this.updateUI();
+
+    // Monitor ball
+    this.monitorBall();
+  }
+
+  /**
+   * Throw the ball (legacy method using sliders)
    */
   throwBall() {
     if (!this.canThrow || this.ballInFlight || this.state !== GAME_STATES.PLAYING) {
@@ -596,6 +704,14 @@ export class Game {
       this.ballInFlight = false;
       this.canThrow = true;
 
+      // Show drag instructions again
+      this.ui.showDragInstructions();
+
+      // Show ready ball indicator again
+      if (this.readyBallGraphics) {
+        this.readyBallGraphics.visible = true;
+      }
+
       // Check level complete
       if (this.shotsMade >= this.goalShots) {
         this.levelComplete();
@@ -623,6 +739,14 @@ export class Game {
     }
     this.ballInFlight = false;
     this.canThrow = true;
+
+    // Show drag instructions again
+    this.ui.showDragInstructions();
+
+    // Show ready ball indicator again
+    if (this.readyBallGraphics) {
+      this.readyBallGraphics.visible = true;
+    }
 
     // Check game over
     if (this.ballsRemaining <= 0 && this.shotsMade < this.goalShots) {

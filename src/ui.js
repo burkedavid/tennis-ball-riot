@@ -82,6 +82,58 @@ export class UIManager {
   }
 
   /**
+   * Enable drag-to-throw mode (hide sliders, show instructions)
+   */
+  enableDragMode() {
+    // Hide the entire controls div
+    this.elements.controls.style.display = 'none';
+
+    // Create drag instructions if not exists
+    if (!document.getElementById('drag-instructions')) {
+      const instructionsDiv = document.createElement('div');
+      instructionsDiv.id = 'drag-instructions';
+      instructionsDiv.className = 'drag-instructions';
+      instructionsDiv.innerHTML = `
+        <div class="instruction-title">🎾 Drag to Throw</div>
+        <div class="instruction-text">
+          <p>👆 <strong>Tap/Click</strong> on the screen</p>
+          <p>↔️ <strong>Drag</strong> in the direction you want to throw</p>
+          <p>🚀 <strong>Release</strong> to launch!</p>
+          <p style="margin-top: 10px; font-size: 0.85rem; color: #aaa;">
+            Longer drag = More power
+          </p>
+        </div>
+      `;
+
+      // Insert after hud or at the bottom
+      this.elements.uiOverlay.appendChild(instructionsDiv);
+    }
+
+    // Store reference to instructions
+    this.dragInstructions = document.getElementById('drag-instructions');
+  }
+
+  /**
+   * Hide drag instructions temporarily (when ball is in flight)
+   */
+  hideDragInstructions() {
+    if (this.dragInstructions) {
+      this.dragInstructions.style.opacity = '0';
+      this.dragInstructions.style.pointerEvents = 'none';
+    }
+  }
+
+  /**
+   * Show drag instructions
+   */
+  showDragInstructions() {
+    if (this.dragInstructions) {
+      this.dragInstructions.style.opacity = '1';
+      this.dragInstructions.style.pointerEvents = 'auto';
+    }
+  }
+
+  /**
    * Update slider value based on click position
    * @param {MouseEvent} e
    * @param {string} type - 'angle' or 'power'

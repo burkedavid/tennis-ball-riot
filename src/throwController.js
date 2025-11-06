@@ -1,0 +1,447 @@
+/**
+ * Throw Controller - Drag-to-Throw System
+ * Handles all pointer/touch input for intuitive ball throwing
+ */
+
+import * as PIXI from 'pixi.js';
+import gsap from 'gsap';
+import { lerp } from './utils.js';
+
+// Throw configuration constants
+export const THROW_CONFIG = {
+  // Drag limits
+  MIN_DRAG_DISTANCE: 30,        // Minimum pixels to register throw
+  MAX_DRAG_DISTANCE: 200,       // Maximum drag length for max power
+
+  // Power scaling
+  MIN_THROW_FORCE: 5,           // Minimum velocity (units/second)
+  MAX_THROW_FORCE: 25,          // Maximum velocity (units/second)
+
+  // Angle constraints
+  MIN_THROW_ANGLE: -85,         // Degrees (almost straight up)
+  MAX_THROW_ANGLE: 85,          // Degrees (almost straight up other direction)
+
+  // Feel adjustments
+  POWER_CURVE: 1.2,             // Exponential curve for power (better feel)
+  DRAG_SMOOTHING: 0.15,         // Smooth out jittery movement
+
+  // Visual feedback
+  ARROW_SCALE_MIN: 0.5,
+  ARROW_SCALE_MAX: 2.0,
+  TRAJECTORY_PREVIEW_POINTS: 15,
+  TRAJECTORY_PREVIEW_TIME: 1.5,
+};
+
+export class ThrowController {
+  constructor(ballStartX, ballStartY) {
+    this.ballStartX = ballStartX;
+    this.ballStartY = ballStartY;
+
+    // Drag state
+    this.isDragging = false;
+    this.dragStart = { x: 0, y: 0 };
+    this.dragCurrent = { x: 0, y: 0 };
+    this.dragVector = { x: 0, y: 0 };
+    this.smoothedVector = { x: 0, y: 0 };
+
+    // Visual feedback
+    this.dragArrow = null;
+    this.trajectoryPreview = null;
+
+    // Callback
+    this.onThrowCallback = null;
+  }
+
+  /**
+   * Initialize visual feedback
+   */
+  initVisuals(pixiContainer) {
+    this.dragArrow = new DragArrowVisual(pixiContainer);
+    this.trajectoryPreview = new TrajectoryPreview(pixiContainer);
+  }
+
+  /**
+   * Setup event listeners
+   */
+  setupEventListeners(canvasElement) {
+    // Mouse events
+    canvasElement.addEventListener('mousedown', (e) => this.handlePointerDown(e.clientX, e.clientY));
+    canvasElement.addEventListener('mousemove', (e) => this.handlePointerMove(e.clientX, e.clientY));
+    canvasElement.addEventListener('mouseup', (e) => this.handlePointerUp());
+
+    // Touch events
+    canvasElement.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      this.handlePointerDown(touch.clientX, touch.clientY);
+    });
+    canvasElement.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      this.handlePointerMove(touch.clientX, touch.clientY);
+    });
+    canvasElement.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      this.handlePointerUp();
+    });
+  }
+
+  /**
+   * Convert screen coordinates to canvas coordinates
+   */
+  screenToCanvas(screenX, screenY, canvasRect) {
+    return {
+      x: screenX - canvasRect.left,
+      y: screenY - canvasRect.top
+    };
+  }
+
+  /**
+   * Handle pointer down (start drag)
+   */
+  handlePointerDown(screenX, screenY) {
+    const canvas = document.querySelector('canvas');
+    const rect = canvas.getBoundingClientRect();
+    const pos = this.screenToCanvas(screenX, screenY, rect);
+
+    this.isDragging = true;
+    this.dragStart = { x: this.ballStartX, y: this.ballStartY };
+    this.dragCurrent = { x: pos.x, y: pos.y };
+    this.smoothedVector = { x: 0, y: 0 };
+
+    if (this.dragArrow) {
+      this.dragArrow.show();
+    }
+  }
+
+  /**
+   * Handle pointer move (update drag)
+   */
+  handlePointerMove(screenX, screenY) {
+    if (!this.isDragging) return;
+
+    const canvas = document.querySelector('canvas');
+    const rect = canvas.getBoundingClientRect();
+    const pos = this.screenToCanvas(screenX, screenY, rect);
+
+    this.dragCurrent = { x: pos.x, y: pos.y };
+
+    // Calculate raw drag vector (INVERTED for intuitive feel)
+    // Drag DOWN = throw UP
+    this.dragVector = {
+      x: -(this.dragCurrent.x - this.dragStart.x),
+      y: -(this.dragCurrent.y - this.dragStart.y)
+    };
+
+    // Apply smoothing
+    this.smoothedVector.x = lerp(
+      this.smoothedVector.x,
+      this.dragVector.x,
+      THROW_CONFIG.DRAG_SMOOTHING
+    );
+    this.smoothedVector.y = lerp(
+      this.smoothedVector.y,
+      this.dragVector.y,
+      THROW_CONFIG.DRAG_SMOOTHING
+    );
+
+    // Update visuals
+    const force = this.calculateThrowForce();
+    const velocity = this.calculateThrowVelocity();
+
+    if (this.dragArrow) {
+      this.dragArrow.update(this.dragStart, this.smoothedVector, force);
+    }
+    if (this.trajectoryPreview) {
+      this.trajectoryPreview.update(this.dragStart, velocity);
+    }
+  }
+
+  /**
+   * Handle pointer up (release throw)
+   */
+  handlePointerUp() {
+    if (!this.isDragging) return;
+
+    const dragDistance = this.getDragDistance();
+
+    // Only throw if dragged far enough
+    if (dragDistance >= THROW_CONFIG.MIN_DRAG_DISTANCE) {
+      const velocity = this.calculateThrowVelocity();
+      const force = this.calculateThrowForce();
+
+      if (this.onThrowCallback) {
+        this.onThrowCallback(velocity, force);
+      }
+    }
+
+    this.isDragging = false;
+
+    if (this.dragArrow) {
+      this.dragArrow.hide();
+    }
+    if (this.trajectoryPreview) {
+      this.trajectoryPreview.hide();
+    }
+  }
+
+  /**
+   * Get drag distance
+   */
+  getDragDistance() {
+    return Math.sqrt(
+      this.smoothedVector.x ** 2 +
+      this.smoothedVector.y ** 2
+    );
+  }
+
+  /**
+   * Calculate throw force from drag distance
+   */
+  calculateThrowForce() {
+    const dragDistance = this.getDragDistance();
+
+    // Clamp to max
+    const clampedDistance = Math.min(
+      dragDistance,
+      THROW_CONFIG.MAX_DRAG_DISTANCE
+    );
+
+    // Normalize to 0-1
+    const normalizedPower = clampedDistance / THROW_CONFIG.MAX_DRAG_DISTANCE;
+
+    // Apply power curve for better feel
+    const curvedPower = Math.pow(normalizedPower, THROW_CONFIG.POWER_CURVE);
+
+    // Map to force range
+    const force =
+      THROW_CONFIG.MIN_THROW_FORCE +
+      (THROW_CONFIG.MAX_THROW_FORCE - THROW_CONFIG.MIN_THROW_FORCE) * curvedPower;
+
+    return force;
+  }
+
+  /**
+   * Calculate throw angle from drag direction
+   */
+  calculateThrowAngle() {
+    // Angle from drag vector
+    let angle = Math.atan2(
+      this.smoothedVector.y,
+      this.smoothedVector.x
+    );
+
+    // Convert to degrees
+    angle = angle * (180 / Math.PI);
+
+    // Clamp to allowed range
+    angle = Math.max(
+      THROW_CONFIG.MIN_THROW_ANGLE,
+      Math.min(THROW_CONFIG.MAX_THROW_ANGLE, angle)
+    );
+
+    return angle;
+  }
+
+  /**
+   * Calculate velocity vector for throw
+   */
+  calculateThrowVelocity() {
+    const force = this.calculateThrowForce();
+    const angle = this.calculateThrowAngle();
+
+    // Convert back to radians
+    const angleRad = angle * (Math.PI / 180);
+
+    // Velocity components
+    const velocity = {
+      x: Math.cos(angleRad) * force,
+      y: Math.sin(angleRad) * force
+    };
+
+    return velocity;
+  }
+
+  /**
+   * Set callback for throw event
+   */
+  setOnThrowCallback(callback) {
+    this.onThrowCallback = callback;
+  }
+
+  /**
+   * Update ball start position
+   */
+  updateBallPosition(x, y) {
+    this.ballStartX = x;
+    this.ballStartY = y;
+  }
+
+  /**
+   * Clean up
+   */
+  destroy() {
+    if (this.dragArrow) {
+      this.dragArrow.destroy();
+    }
+    if (this.trajectoryPreview) {
+      this.trajectoryPreview.destroy();
+    }
+  }
+}
+
+/**
+ * Visual feedback for drag arrow
+ */
+class DragArrowVisual {
+  constructor(pixiContainer) {
+    this.container = new PIXI.Container();
+    this.container.visible = false;
+
+    // Arrow line
+    this.line = new PIXI.Graphics();
+
+    // Arrow head
+    this.arrowHead = new PIXI.Graphics();
+
+    // Power circle
+    this.powerCircle = new PIXI.Graphics();
+
+    this.container.addChild(this.powerCircle, this.line, this.arrowHead);
+    pixiContainer.addChild(this.container);
+  }
+
+  show() {
+    this.container.visible = true;
+  }
+
+  hide() {
+    this.container.visible = false;
+    gsap.killTweensOf(this.powerCircle.scale);
+    this.powerCircle.scale.set(1);
+  }
+
+  update(dragStart, smoothedVector, force) {
+    this.line.clear();
+    this.arrowHead.clear();
+    this.powerCircle.clear();
+
+    // Arrow points in throw direction
+    const endX = dragStart.x + smoothedVector.x;
+    const endY = dragStart.y + smoothedVector.y;
+
+    // Arrow line
+    this.line.lineStyle(5, 0xFFFFFF, 0.9);
+    this.line.moveTo(dragStart.x, dragStart.y);
+    this.line.lineTo(endX, endY);
+
+    // Arrow head
+    const angle = Math.atan2(smoothedVector.y, smoothedVector.x);
+    const headSize = 20;
+
+    this.arrowHead.beginFill(0xFFFFFF, 0.9);
+    this.arrowHead.moveTo(endX, endY);
+    this.arrowHead.lineTo(
+      endX - headSize * Math.cos(angle - Math.PI / 6),
+      endY - headSize * Math.sin(angle - Math.PI / 6)
+    );
+    this.arrowHead.lineTo(
+      endX - headSize * Math.cos(angle + Math.PI / 6),
+      endY - headSize * Math.sin(angle + Math.PI / 6)
+    );
+    this.arrowHead.closePath();
+    this.arrowHead.endFill();
+
+    // Power circle
+    const normalizedPower = force / THROW_CONFIG.MAX_THROW_FORCE;
+    const circleRadius = 15 + normalizedPower * 25;
+    const circleColor = this.getPowerColor(normalizedPower);
+
+    this.powerCircle.beginFill(circleColor, 0.4);
+    this.powerCircle.drawCircle(dragStart.x, dragStart.y, circleRadius);
+    this.powerCircle.endFill();
+
+    // Pulse animation
+    gsap.killTweensOf(this.powerCircle.scale);
+    gsap.to(this.powerCircle.scale, {
+      x: 1.3,
+      y: 1.3,
+      duration: 0.5,
+      yoyo: true,
+      repeat: -1,
+      ease: "sine.inOut"
+    });
+  }
+
+  getPowerColor(normalized) {
+    if (normalized < 0.5) {
+      return 0x00FF00; // Green (low power)
+    } else if (normalized < 0.8) {
+      return 0xFFFF00; // Yellow (medium)
+    } else {
+      return 0xFF0000; // Red (max power!)
+    }
+  }
+
+  destroy() {
+    this.container.destroy();
+  }
+}
+
+/**
+ * Trajectory preview dots
+ */
+class TrajectoryPreview {
+  constructor(pixiContainer) {
+    this.container = new PIXI.Container();
+    this.container.visible = false;
+
+    this.dots = [];
+
+    // Create preview dots
+    for (let i = 0; i < THROW_CONFIG.TRAJECTORY_PREVIEW_POINTS; i++) {
+      const dot = new PIXI.Graphics();
+      dot.beginFill(0xFFFFFF, 0.6 - (i / THROW_CONFIG.TRAJECTORY_PREVIEW_POINTS) * 0.5);
+      dot.drawCircle(0, 0, 4);
+      dot.endFill();
+      this.dots.push(dot);
+      this.container.addChild(dot);
+    }
+
+    pixiContainer.addChild(this.container);
+  }
+
+  show() {
+    this.container.visible = true;
+  }
+
+  hide() {
+    this.container.visible = false;
+  }
+
+  update(startPos, velocity) {
+    const gravity = 0.8; // Match game gravity
+    const timeStep = THROW_CONFIG.TRAJECTORY_PREVIEW_TIME / THROW_CONFIG.TRAJECTORY_PREVIEW_POINTS;
+
+    let x = startPos.x;
+    let y = startPos.y;
+    let vx = velocity.x;
+    let vy = velocity.y;
+
+    for (let i = 0; i < this.dots.length; i++) {
+      // Simple physics simulation
+      x += vx * timeStep * 60; // Scale by 60fps
+      y += vy * timeStep * 60;
+      vy += gravity * timeStep * 60; // Apply gravity
+
+      this.dots[i].x = x;
+      this.dots[i].y = y;
+    }
+  }
+
+  destroy() {
+    this.container.destroy();
+  }
+}
+
+export default ThrowController;

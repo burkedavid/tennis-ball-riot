@@ -78,6 +78,18 @@ export class Ball {
   }
 
   /**
+   * Throw the ball with direct velocity
+   * @param {number} vx - X velocity
+   * @param {number} vy - Y velocity
+   */
+  throwWithVelocity(vx, vy) {
+    this.isActive = true;
+    this.bounceCount = 0;
+    this.hasCollided = false;
+    this.physicsWorld.applyVelocity(this.body, vx, vy);
+  }
+
+  /**
    * Register a bounce
    */
   registerBounce() {

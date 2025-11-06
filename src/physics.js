@@ -94,6 +94,19 @@ export class PhysicsWorld {
   }
 
   /**
+   * Apply velocity directly to ball (for drag-to-throw)
+   * @param {Matter.Body} ball - Ball body
+   * @param {number} vx - X velocity
+   * @param {number} vy - Y velocity
+   */
+  applyVelocity(ball, vx, vy) {
+    Matter.Body.setVelocity(ball, {
+      x: vx,
+      y: vy,
+    });
+  }
+
+  /**
    * Create a static rectangle (walls, platforms, etc.)
    * @param {number} x - Center x
    * @param {number} y - Center y
