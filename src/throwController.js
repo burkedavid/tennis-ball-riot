@@ -325,7 +325,7 @@ export class ThrowController {
     // Simple approach: Use the flick vector directly with a small multiplier
     // The smoothedVector is already in pixels, so we just need to scale it down
     // to reasonable game velocities
-    const velocityMultiplier = 0.08; // Increased since we removed speed boost
+    const velocityMultiplier = 0.07; // Balanced speed - visible but can reach target
 
     const velocity = {
       x: this.smoothedVector.x * velocityMultiplier,
@@ -496,7 +496,7 @@ class TrajectoryPreview {
   }
 
   update(startPos, velocity) {
-    const gravity = 0.4; // Match game gravity (SLOWER)
+    const gravity = 0.3; // Match game gravity (REDUCED)
     const timeStep = THROW_CONFIG.TRAJECTORY_PREVIEW_TIME / THROW_CONFIG.TRAJECTORY_PREVIEW_POINTS;
 
     let x = startPos.x;
