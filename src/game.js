@@ -4,12 +4,14 @@
  */
 
 import * as PIXI from 'pixi.js';
+import gsap from 'gsap';
 import { PhysicsWorld } from './physics.js';
 import { Ball } from './entities/Ball.js';
 import { Singer } from './entities/Singer.js';
 import { Glass } from './entities/Glass.js';
 import { Drummer } from './entities/Drummer.js';
 import { BandMember } from './entities/BandMember.js';
+import { Obstacle } from './entities/Obstacle.js';
 import { ParticleSystem } from './particles.js';
 import { UIManager } from './ui.js';
 import { ThrowController } from './throwController.js';
@@ -57,6 +59,7 @@ export class Game {
     this.bassist = null;
     this.stage = null;
     this.crowd = [];
+    this.obstacles = [];
 
     // Game state flags
     this.ballInFlight = false;
@@ -65,6 +68,9 @@ export class Game {
     // Crowd bump system
     this.nextCrowdBumpTime = 0;
     this.crowdBumpFrequency = GAME_BALANCE.crowdBumpInterval;
+    this.isBumpActive = false;
+    this.bumpOffsetX = 0;
+    this.bumpOffsetY = 0;
 
     // Timing
     this.lastTime = 0;
@@ -75,19 +81,68 @@ export class Game {
   }
 
   /**
+   * Calculate responsive canvas size based on screen dimensions
+   * @returns {{width: number, height: number}}
+   */
+  calculateResponsiveSize() {
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+
+    // Original aspect ratio (1200x800 = 3:2 = 1.5)
+    const targetAspectRatio = CANVAS_WIDTH / CANVAS_HEIGHT;
+
+    // Calculate size that fits screen while maintaining aspect ratio
+    let canvasWidth = screenWidth;
+    let canvasHeight = screenWidth / targetAspectRatio;
+
+    // If height is too tall, scale based on height instead
+    if (canvasHeight > screenHeight) {
+      canvasHeight = screenHeight;
+      canvasWidth = screenHeight * targetAspectRatio;
+    }
+
+    // Cap at original size on desktop
+    canvasWidth = Math.min(canvasWidth, CANVAS_WIDTH);
+    canvasHeight = Math.min(canvasHeight, CANVAS_HEIGHT);
+
+    console.log(`📱 Canvas size: ${Math.round(canvasWidth)}x${Math.round(canvasHeight)}`);
+    console.log(`📱 Screen size: ${screenWidth}x${screenHeight}`);
+
+    return {
+      width: Math.round(canvasWidth),
+      height: Math.round(canvasHeight),
+    };
+  }
+
+  /**
    * Initialize the game
    */
   init() {
+    // Calculate responsive canvas size
+    const canvasSize = this.calculateResponsiveSize();
+
     // Create PIXI application (PixiJS v7 uses constructor options)
     this.app = new PIXI.Application({
-      width: CANVAS_WIDTH,
-      height: CANVAS_HEIGHT,
+      width: canvasSize.width,
+      height: canvasSize.height,
       backgroundColor: COLORS.background,
       antialias: true,
+      autoDensity: true,          // Auto-adjust for high DPI screens
+      resolution: window.devicePixelRatio || 1,  // Support retina displays
     });
+
+    // Store scale factor for coordinate adjustments
+    this.scaleX = canvasSize.width / CANVAS_WIDTH;
+    this.scaleY = canvasSize.height / CANVAS_HEIGHT;
 
     // Add to DOM
     document.getElementById('game-container').appendChild(this.app.view);
+
+    // Make canvas responsive with CSS
+    this.app.view.style.width = '100%';
+    this.app.view.style.height = 'auto';
+    this.app.view.style.maxWidth = `${CANVAS_WIDTH}px`;
+    this.app.view.style.display = 'block';
 
     // Create main containers
     this.gameContainer = new PIXI.Container();
@@ -118,6 +173,41 @@ export class Game {
 
     // Setup game loop
     this.app.ticker.add((time) => this.gameLoop(time));
+
+    // Setup window resize handler
+    this.setupResizeHandler();
+  }
+
+  /**
+   * Setup window resize handler for responsive canvas
+   */
+  setupResizeHandler() {
+    let resizeTimeout;
+
+    const handleResize = () => {
+      // Debounce resize events
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        const newSize = this.calculateResponsiveSize();
+
+        // Resize renderer
+        this.app.renderer.resize(newSize.width, newSize.height);
+
+        // Update scale factors
+        this.scaleX = newSize.width / CANVAS_WIDTH;
+        this.scaleY = newSize.height / CANVAS_HEIGHT;
+
+        console.log('🔄 Canvas resized to:', newSize);
+      }, 250);
+    };
+
+    // Handle window resize
+    window.addEventListener('resize', handleResize);
+
+    // Handle orientation change (mobile)
+    window.addEventListener('orientationchange', () => {
+      setTimeout(handleResize, 100); // Small delay for orientation change
+    });
   }
 
   /**
@@ -127,7 +217,6 @@ export class Game {
     this.ui.bindCallbacks({
       onStart: () => this.startGame(),
       onThrow: () => this.throwBall(),
-      onPause: () => this.pauseGame(),
       onResume: () => this.resumeGame(),
       onNextLevel: () => this.nextLevel(),
       onRestart: () => this.restartLevel(),
@@ -204,6 +293,9 @@ export class Game {
       ENTITIES.bassist.color
     );
     this.gameContainer.addChild(this.bassist.getGraphics());
+
+    // Create obstacles for this level
+    this.createObstacles(levelConfig.obstacles);
 
     // Create audience area (visual only)
     this.createAudience();
@@ -395,6 +487,36 @@ export class Game {
   }
 
   /**
+   * Create obstacles for the level
+   * @param {Array} obstacleConfigs - Array of obstacle configurations from level data
+   */
+  createObstacles(obstacleConfigs) {
+    if (!obstacleConfigs || obstacleConfigs.length === 0) {
+      return; // No obstacles for this level
+    }
+
+    // Clear existing obstacles
+    this.obstacles.forEach(obstacle => obstacle.destroy());
+    this.obstacles = [];
+
+    // Create each obstacle
+    obstacleConfigs.forEach((config) => {
+      const obstacle = new Obstacle(
+        this.physics,
+        config.type,
+        config.x,
+        config.y,
+        config.config || {}
+      );
+
+      this.obstacles.push(obstacle);
+      this.gameContainer.addChild(obstacle.getGraphics());
+    });
+
+    console.log(`✅ Created ${this.obstacles.length} obstacles for level ${this.currentLevel}`);
+  }
+
+  /**
    * Create audience silhouettes (FOREGROUND - between you and stage)
    */
   createAudience() {
@@ -528,6 +650,12 @@ export class Game {
       this.readyBallGraphics = null;
     }
 
+    // Clear obstacles
+    this.obstacles.forEach(obstacle => {
+      obstacle.destroy();
+    });
+    this.obstacles = [];
+
     // Clear particles
     this.particles.clear();
 
@@ -547,9 +675,6 @@ export class Game {
       return;
     }
 
-    // Hide drag instructions while ball is in flight
-    this.ui.hideDragInstructions();
-
     // Hide ready ball indicator
     if (this.readyBallGraphics) {
       this.readyBallGraphics.visible = false;
@@ -563,8 +688,14 @@ export class Game {
     );
     this.gameContainer.addChild(this.activeBall.getGraphics());
 
-    // Throw ball with velocity vector
-    this.activeBall.throwWithVelocity(velocity.x, velocity.y);
+    // Apply crowd bump offset if active
+    let finalVelocity = {
+      x: velocity.x + this.bumpOffsetX,
+      y: velocity.y + this.bumpOffsetY
+    };
+
+    // Throw ball with velocity vector (with bump offset if applicable)
+    this.activeBall.throwWithVelocity(finalVelocity.x, finalVelocity.y);
 
     // Update state
     this.ballsRemaining--;
@@ -704,9 +835,6 @@ export class Game {
       this.ballInFlight = false;
       this.canThrow = true;
 
-      // Show drag instructions again
-      this.ui.showDragInstructions();
-
       // Show ready ball indicator again
       if (this.readyBallGraphics) {
         this.readyBallGraphics.visible = true;
@@ -740,9 +868,6 @@ export class Game {
     this.ballInFlight = false;
     this.canThrow = true;
 
-    // Show drag instructions again
-    this.ui.showDragInstructions();
-
     // Show ready ball indicator again
     if (this.readyBallGraphics) {
       this.readyBallGraphics.visible = true;
@@ -773,7 +898,14 @@ export class Game {
   triggerCrowdBump() {
     if (this.state !== GAME_STATES.PLAYING) return;
 
-    // Visual effect
+    // Set bump active flag
+    this.isBumpActive = true;
+
+    // Random aim offset (affects throws during bump)
+    this.bumpOffsetX = (Math.random() - 0.5) * 8 * GAME_BALANCE.crowdBumpStrength;
+    this.bumpOffsetY = (Math.random() - 0.5) * 8 * GAME_BALANCE.crowdBumpStrength;
+
+    // Visual effects
     Animations.screenShake(this.gameContainer, 8);
 
     // UI effect
@@ -781,6 +913,13 @@ export class Game {
 
     // Show message
     this.ui.showFloatingText('CROWD BUMP!', CANVAS_WIDTH / 2, 100, '#ffff00');
+
+    // Clear bump after duration
+    setTimeout(() => {
+      this.isBumpActive = false;
+      this.bumpOffsetX = 0;
+      this.bumpOffsetY = 0;
+    }, 500);
 
     // Schedule next bump
     this.scheduleNextCrowdBump();
@@ -945,6 +1084,11 @@ export class Game {
       if (this.activeBall) {
         this.activeBall.update();
       }
+
+      // Update obstacles (for animated ones like spinning lights)
+      this.obstacles.forEach(obstacle => {
+        obstacle.update();
+      });
 
       // Update particles
       this.particles.update(this.deltaTime);

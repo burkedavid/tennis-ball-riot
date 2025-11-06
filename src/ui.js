@@ -24,7 +24,6 @@ export class UIManager {
       powerFill: document.getElementById('power-fill'),
       powerValue: document.getElementById('power-value'),
       btnThrow: document.getElementById('btn-throw'),
-      btnPause: document.getElementById('btn-pause'),
 
       // Modals
       uiOverlay: document.getElementById('ui-overlay'),
@@ -82,54 +81,20 @@ export class UIManager {
   }
 
   /**
-   * Enable drag-to-throw mode (hide sliders, show instructions)
+   * Enable drag-to-throw mode (hide sliders)
    */
   enableDragMode() {
     // Hide the entire controls div
     this.elements.controls.style.display = 'none';
-
-    // Create drag instructions if not exists
-    if (!document.getElementById('drag-instructions')) {
-      const instructionsDiv = document.createElement('div');
-      instructionsDiv.id = 'drag-instructions';
-      instructionsDiv.className = 'drag-instructions';
-      instructionsDiv.innerHTML = `
-        <div class="instruction-title">🎾 Drag to Throw</div>
-        <div class="instruction-text">
-          <p>👆 <strong>Tap/Click</strong> on the screen</p>
-          <p>↔️ <strong>Drag</strong> in the direction you want to throw</p>
-          <p>🚀 <strong>Release</strong> to launch!</p>
-          <p style="margin-top: 10px; font-size: 0.85rem; color: #aaa;">
-            Longer drag = More power
-          </p>
-        </div>
-      `;
-
-      // Insert after hud or at the bottom
-      this.elements.uiOverlay.appendChild(instructionsDiv);
-    }
-
-    // Store reference to instructions
-    this.dragInstructions = document.getElementById('drag-instructions');
   }
 
   /**
-   * Hide drag instructions temporarily (when ball is in flight)
+   * Hide drag instructions permanently (called when game starts)
    */
   hideDragInstructions() {
-    if (this.dragInstructions) {
-      this.dragInstructions.style.opacity = '0';
-      this.dragInstructions.style.pointerEvents = 'none';
-    }
-  }
-
-  /**
-   * Show drag instructions
-   */
-  showDragInstructions() {
-    if (this.dragInstructions) {
-      this.dragInstructions.style.opacity = '1';
-      this.dragInstructions.style.pointerEvents = 'auto';
+    const instructions = document.getElementById('drag-instructions');
+    if (instructions) {
+      instructions.remove();
     }
   }
 
@@ -317,9 +282,6 @@ export class UIManager {
     }
     if (callbacks.onThrow) {
       this.elements.btnThrow.onclick = callbacks.onThrow;
-    }
-    if (callbacks.onPause) {
-      this.elements.btnPause.onclick = callbacks.onPause;
     }
     if (callbacks.onResume) {
       this.elements.btnResume.onclick = callbacks.onResume;

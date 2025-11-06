@@ -15,7 +15,7 @@ export const LEVELS = [
     singerPatterns: ['pacing'],      // Movement patterns available
     crowdBumpFrequency: 1.2,         // Multiplier for bump frequency (higher = less frequent)
     crowdBumpStrength: 0.7,          // Multiplier for bump strength
-    obstacles: [],                   // Additional obstacles
+    obstacles: [],                   // No obstacles in tutorial
     effects: [],                     // Visual effects active
     tutorial: true,
   },
@@ -30,7 +30,9 @@ export const LEVELS = [
     singerPatterns: ['pacing', 'jumping'],
     crowdBumpFrequency: 1.0,
     crowdBumpStrength: 0.9,
-    obstacles: [],
+    obstacles: [
+      { type: 'stage_monitor', x: 750, y: 370 }  // One stage monitor center-ish
+    ],
     effects: [],
     tutorial: false,
   },
@@ -45,7 +47,10 @@ export const LEVELS = [
     singerPatterns: ['pacing', 'jumping', 'running'],
     crowdBumpFrequency: 0.9,
     crowdBumpStrength: 1.0,
-    obstacles: ['amp'],
+    obstacles: [
+      { type: 'stage_monitor', x: 750, y: 370 },
+      { type: 'amp_stack', x: 400, y: 350 }  // Amp stack on left
+    ],
     effects: ['fog'],
     tutorial: false,
   },
@@ -60,7 +65,11 @@ export const LEVELS = [
     singerPatterns: ['pacing', 'jumping', 'running', 'stagedive'],
     crowdBumpFrequency: 0.8,
     crowdBumpStrength: 1.2,
-    obstacles: ['amp', 'mic'],
+    obstacles: [
+      { type: 'stage_monitor', x: 750, y: 370 },
+      { type: 'amp_stack', x: 350, y: 350 },
+      { type: 'spinning_light', x: 200, y: 250, config: { color: 0xFF00FF, spinSpeed: 3 } }
+    ],
     effects: ['fog', 'lights'],
     tutorial: false,
   },
@@ -75,7 +84,13 @@ export const LEVELS = [
     singerPatterns: ['pacing', 'jumping', 'running', 'stagedive', 'spin'],
     crowdBumpFrequency: 0.7,
     crowdBumpStrength: 1.4,
-    obstacles: ['amp', 'mic', 'speaker'],
+    obstacles: [
+      { type: 'stage_monitor', x: 700, y: 370 },
+      { type: 'stage_monitor', x: 850, y: 370 },
+      { type: 'amp_stack', x: 350, y: 350 },
+      { type: 'spinning_light', x: 200, y: 250, config: { color: 0xFF00FF, spinSpeed: 4 } },
+      { type: 'spinning_light', x: 1050, y: 250, config: { color: 0x00FFFF, spinSpeed: 3 } }
+    ],
     effects: ['fog', 'lights', 'strobe'],
     tutorial: false,
     drummerDrinks: true,              // Drummer occasionally drinks (glass disappears)

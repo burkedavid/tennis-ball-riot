@@ -58,19 +58,23 @@ export class PhysicsWorld {
    * @param {number} x - Starting x position
    * @param {number} y - Starting y position
    * @param {number} radius - Ball radius
+   * @param {Object} options - Additional options
    * @returns {Matter.Body} Ball physics body
    */
-  createBall(x, y, radius) {
+  createBall(x, y, radius, options = {}) {
     const ball = Matter.Bodies.circle(x, y, radius, {
-      restitution: PHYSICS_CONFIG.ballRestitution,
+      restitution: options.restitution || PHYSICS_CONFIG.ballRestitution,
       friction: 0.05,
       frictionAir: PHYSICS_CONFIG.airResistance,
       density: 0.001,
-      label: 'ball',
+      label: options.label || 'ball',
+      isStatic: options.isStatic || false,
     });
 
     Matter.World.add(this.world, ball);
-    this.bodies.set('activeBall', ball);
+    if (!options.label || options.label === 'ball') {
+      this.bodies.set('activeBall', ball);
+    }
     return ball;
   }
 
@@ -126,6 +130,37 @@ export class PhysicsWorld {
     Matter.World.add(this.world, rect);
     this.bodies.set(label, rect);
     return rect;
+  }
+
+  /**
+   * Create a static rectangle with custom options (for obstacles)
+   * @param {number} x - Center x
+   * @param {number} y - Center y
+   * @param {number} width
+   * @param {number} height
+   * @param {Object} options - Custom options (restitution, friction, label, etc.)
+   * @returns {Matter.Body} Static body
+   */
+  createStaticRectangle(x, y, width, height, options = {}) {
+    const rect = Matter.Bodies.rectangle(x, y, width, height, {
+      isStatic: true,
+      restitution: options.restitution || PHYSICS_CONFIG.stageRestitution,
+      friction: options.friction || 0.3,
+      label: options.label || 'static',
+    });
+
+    Matter.World.add(this.world, rect);
+    return rect;
+  }
+
+  /**
+   * Set body position (for moving obstacles)
+   * @param {Matter.Body} body
+   * @param {number} x
+   * @param {number} y
+   */
+  setBodyPosition(body, x, y) {
+    Matter.Body.setPosition(body, { x, y });
   }
 
   /**
