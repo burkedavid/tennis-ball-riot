@@ -10,14 +10,14 @@ export const TARGET_FPS = 60;
 
 // Physics Configuration
 export const PHYSICS_CONFIG = {
-  gravity: { x: 0, y: 0.8 },         // Lighter gravity for longer arc
+  gravity: { x: 0, y: 0.4 },         // SLOWER gravity (was 0.8) - easier to track
   ballRestitution: 0.6,              // Ball bounciness
   glassRestitution: 0.3,             // Glass absorbs energy
   stageRestitution: 0.5,             // Stage has medium bounce
-  airResistance: 0.005,              // Less drag for longer throws
+  airResistance: 0.008,              // MORE drag to slow ball (was 0.005)
   spinFactor: 0.05,                  // Ball spin affects trajectory
   windStrength: 0.15,                // Wind force (when active)
-  throwForceMultiplier: 0.08,        // INCREASED for reaching stage (was 0.03)
+  throwForceMultiplier: 0.06,        // REDUCED for slower, more visible arc (was 0.08)
 };
 
 // Game Balance

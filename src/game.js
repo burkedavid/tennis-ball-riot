@@ -97,31 +97,27 @@ export class Game {
 
     let canvasWidth, canvasHeight;
 
-    if (isMobile) {
-      // MOBILE: Fill the entire screen
-      canvasWidth = screenWidth;
+    // ALWAYS maintain aspect ratio (both mobile and desktop)
+    // This prevents squashing on tall portrait screens
+    canvasWidth = screenWidth;
+    canvasHeight = screenWidth / targetAspectRatio;
+
+    // If height is too tall, scale based on height instead
+    if (canvasHeight > screenHeight) {
       canvasHeight = screenHeight;
-
-      console.log(`📱 MOBILE MODE - Full screen: ${Math.round(canvasWidth)}x${Math.round(canvasHeight)}`);
-    } else {
-      // DESKTOP: Maintain aspect ratio and cap at original size
-      canvasWidth = screenWidth;
-      canvasHeight = screenWidth / targetAspectRatio;
-
-      // If height is too tall, scale based on height instead
-      if (canvasHeight > screenHeight) {
-        canvasHeight = screenHeight;
-        canvasWidth = screenHeight * targetAspectRatio;
-      }
-
-      // Cap at original size on desktop
-      canvasWidth = Math.min(canvasWidth, CANVAS_WIDTH);
-      canvasHeight = Math.min(canvasHeight, CANVAS_HEIGHT);
-
-      console.log(`💻 DESKTOP MODE - Canvas: ${Math.round(canvasWidth)}x${Math.round(canvasHeight)}`);
+      canvasWidth = screenHeight * targetAspectRatio;
     }
 
-    console.log(`📱 Screen size: ${screenWidth}x${screenHeight}`);
+    if (!isMobile) {
+      // Desktop: Cap at original size
+      canvasWidth = Math.min(canvasWidth, CANVAS_WIDTH);
+      canvasHeight = Math.min(canvasHeight, CANVAS_HEIGHT);
+      console.log(`💻 DESKTOP MODE - Canvas: ${Math.round(canvasWidth)}x${Math.round(canvasHeight)}`);
+    } else {
+      console.log(`📱 MOBILE MODE - Aspect ratio maintained: ${Math.round(canvasWidth)}x${Math.round(canvasHeight)}`);
+    }
+
+    console.log(`📱 Screen size: ${screenWidth}x${screenHeight}, Aspect ratio: ${targetAspectRatio.toFixed(2)}`);
 
     return {
       width: Math.round(canvasWidth),
@@ -174,6 +170,7 @@ export class Game {
     );
     this.throwController.initVisuals(this.gameContainer);
     this.throwController.setupEventListeners(this.app.view);
+    this.throwController.setScaleFactors(this.scaleX, this.scaleY); // Set initial scale
     this.throwController.setOnThrowCallback((velocity, force) => {
       this.throwBallWithVelocity(velocity, force);
     });
@@ -216,6 +213,11 @@ export class Game {
         // Scale game container to match new size
         if (this.gameContainer) {
           this.gameContainer.scale.set(this.scaleX, this.scaleY);
+        }
+
+        // Update throw controller scale factors for input
+        if (this.throwController) {
+          this.throwController.setScaleFactors(this.scaleX, this.scaleY);
         }
 
         console.log('🔄 Canvas resized to:', newSize);

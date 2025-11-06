@@ -13,9 +13,9 @@ export const THROW_CONFIG = {
   MIN_DRAG_DISTANCE: 30,        // Minimum pixels to register throw
   MAX_DRAG_DISTANCE: 200,       // Maximum drag length for max power
 
-  // Power scaling
-  MIN_THROW_FORCE: 8,           // Minimum velocity (pixels per frame)
-  MAX_THROW_FORCE: 20,          // Maximum velocity (pixels per frame)
+  // Power scaling - SLOWER for better visibility
+  MIN_THROW_FORCE: 6,           // Minimum velocity (was 8)
+  MAX_THROW_FORCE: 15,          // Maximum velocity (was 20) - SLOWER!
 
   // Angle constraints
   MIN_THROW_ANGLE: -85,         // Degrees (almost straight up)
@@ -44,12 +44,25 @@ export class ThrowController {
     this.dragVector = { x: 0, y: 0 };
     this.smoothedVector = { x: 0, y: 0 };
 
+    // Scale factors for coordinate transformation (canvas to game world)
+    this.scaleX = 1;
+    this.scaleY = 1;
+
     // Visual feedback
     this.dragArrow = null;
     this.trajectoryPreview = null;
 
     // Callback
     this.onThrowCallback = null;
+  }
+
+  /**
+   * Update scale factors when canvas/window resizes
+   */
+  setScaleFactors(scaleX, scaleY) {
+    this.scaleX = scaleX;
+    this.scaleY = scaleY;
+    console.log(`🎯 ThrowController scale updated: ${scaleX.toFixed(3)}x, ${scaleY.toFixed(3)}x`);
   }
 
   /**
@@ -87,12 +100,18 @@ export class ThrowController {
   }
 
   /**
-   * Convert screen coordinates to canvas coordinates
+   * Convert screen coordinates to game world coordinates
+   * Takes into account both canvas position and scaling
    */
   screenToCanvas(screenX, screenY, canvasRect) {
+    // First convert to canvas-local coordinates
+    const canvasX = screenX - canvasRect.left;
+    const canvasY = screenY - canvasRect.top;
+
+    // Then scale to game world coordinates (1200x800)
     return {
-      x: screenX - canvasRect.left,
-      y: screenY - canvasRect.top
+      x: canvasX / this.scaleX,
+      y: canvasY / this.scaleY
     };
   }
 
@@ -112,6 +131,11 @@ export class ThrowController {
     if (this.dragArrow) {
       this.dragArrow.show();
     }
+    if (this.trajectoryPreview) {
+      this.trajectoryPreview.show();
+    }
+
+    console.log('🎯 Drag started at game coords:', this.dragStart);
   }
 
   /**
@@ -148,6 +172,11 @@ export class ThrowController {
     // Update visuals
     const force = this.calculateThrowForce();
     const velocity = this.calculateThrowVelocity();
+
+    // Debug logging (throttled)
+    if (Math.random() < 0.1) { // Log ~10% of frames
+      console.log('🎯 Dragging - vector:', this.smoothedVector, 'force:', force.toFixed(1), 'velocity:', velocity);
+    }
 
     if (this.dragArrow) {
       this.dragArrow.update(this.dragStart, this.smoothedVector, force);
@@ -398,11 +427,12 @@ class TrajectoryPreview {
 
     this.dots = [];
 
-    // Create preview dots
+    // Create preview dots (GREEN like the ball)
     for (let i = 0; i < THROW_CONFIG.TRAJECTORY_PREVIEW_POINTS; i++) {
       const dot = new PIXI.Graphics();
-      dot.beginFill(0xFFFFFF, 0.6 - (i / THROW_CONFIG.TRAJECTORY_PREVIEW_POINTS) * 0.5);
-      dot.drawCircle(0, 0, 4);
+      const alpha = 0.8 - (i / THROW_CONFIG.TRAJECTORY_PREVIEW_POINTS) * 0.6; // Fade out
+      dot.beginFill(0x9FCD2A, alpha); // Tennis ball green
+      dot.drawCircle(0, 0, 5); // Slightly larger
       dot.endFill();
       this.dots.push(dot);
       this.container.addChild(dot);
@@ -420,7 +450,7 @@ class TrajectoryPreview {
   }
 
   update(startPos, velocity) {
-    const gravity = 0.8; // Match game gravity
+    const gravity = 0.4; // Match game gravity (SLOWER)
     const timeStep = THROW_CONFIG.TRAJECTORY_PREVIEW_TIME / THROW_CONFIG.TRAJECTORY_PREVIEW_POINTS;
 
     let x = startPos.x;

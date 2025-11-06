@@ -128,14 +128,23 @@ export class Drummer {
       this.graphics.lineTo(6, -halfHeight - 10);
     }
 
-    // Body - Tank top with rounded shoulders
+    // Body - Tank top with organic curves (NO rectangles!)
     this.graphics.lineStyle(0);
     this.graphics.beginFill(ENTITIES.drummer.color);
-    // Shoulders
+
+    // Shoulders (circular)
     this.graphics.drawCircle(-halfWidth + 10, -halfHeight + 12, 14);
     this.graphics.drawCircle(halfWidth - 10, -halfHeight + 12, 14);
-    // Torso
-    this.graphics.drawRoundedRect(-halfWidth + 8, -halfHeight + 5, this.width - 16, this.height * 0.65, 10);
+
+    // Upper torso (chest) - ellipse
+    this.graphics.drawEllipse(0, -halfHeight + 20, halfWidth - 5, 18);
+
+    // Mid torso - narrowing ellipse
+    this.graphics.drawEllipse(0, -halfHeight + 42, halfWidth - 10, 16);
+
+    // Lower torso (waist) - narrow ellipse
+    this.graphics.drawEllipse(0, -halfHeight + 60, halfWidth - 12, 14);
+
     this.graphics.endFill();
 
     // Arms (drumsticks) - more natural with elbows
