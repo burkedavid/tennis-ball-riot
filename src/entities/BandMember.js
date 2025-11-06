@@ -34,35 +34,102 @@ export class BandMember {
     const halfWidth = this.width / 2;
     const halfHeight = this.height / 2;
 
-    // Head
-    this.graphics.beginFill(0xFFCC99);
-    this.graphics.drawCircle(0, -halfHeight - 10, 15);
+    // Rock hair (long, wild)
+    this.graphics.beginFill(0x1a1a1a);
+    // Messy long hair
+    for (let i = -2; i <= 2; i++) {
+      const offsetX = i * 8;
+      this.graphics.drawEllipse(offsetX, -halfHeight - 22, 8, 15);
+    }
+    // Hair volume on top
+    this.graphics.drawEllipse(0, -halfHeight - 28, 18, 10);
     this.graphics.endFill();
 
-    // Wild hair
-    this.graphics.beginFill(0x222222);
-    this.graphics.drawCircle(-8, -halfHeight - 18, 10);
-    this.graphics.drawCircle(0, -halfHeight - 20, 10);
-    this.graphics.drawCircle(8, -halfHeight - 18, 10);
+    // Neck
+    this.graphics.lineStyle(0);
+    this.graphics.beginFill(0xF5C79C);
+    this.graphics.drawRect(-5, -halfHeight - 5, 10, 10);
     this.graphics.endFill();
 
-    // Eyes
+    // Head (rounder, more human)
+    this.graphics.beginFill(0xF5C79C);
+    this.graphics.drawCircle(0, -halfHeight - 15, 16);
+    this.graphics.endFill();
+
+    // Eyes (sunglasses for cool factor)
+    this.graphics.lineStyle(0);
     this.graphics.beginFill(0x000000);
-    this.graphics.drawCircle(-5, -halfHeight - 10, 2);
-    this.graphics.drawCircle(5, -halfHeight - 10, 2);
+    this.graphics.drawEllipse(-6, -halfHeight - 16, 5, 3);
+    this.graphics.drawEllipse(6, -halfHeight - 16, 5, 3);
     this.graphics.endFill();
+    // Sunglasses frame
+    this.graphics.lineStyle(2, 0x222222);
+    this.graphics.drawEllipse(-6, -halfHeight - 16, 6, 4);
+    this.graphics.drawEllipse(6, -halfHeight - 16, 6, 4);
+    // Bridge
+    this.graphics.moveTo(-1, -halfHeight - 16);
+    this.graphics.lineTo(1, -halfHeight - 16);
 
-    // Body (band shirt)
+    // Nose
+    this.graphics.lineStyle(1, 0xD4A574);
+    this.graphics.moveTo(0, -halfHeight - 14);
+    this.graphics.lineTo(-1, -halfHeight - 11);
+
+    // Mouth
+    this.graphics.lineStyle(2, 0x880000);
+    this.graphics.arc(0, -halfHeight - 10, 4, 0, Math.PI);
+
+    // Body - Rock T-shirt with rounded shoulders
+    this.graphics.lineStyle(0);
     this.graphics.beginFill(this.color);
-    this.graphics.drawRoundedRect(-halfWidth, -halfHeight + 5, this.width, this.height * 0.6, 5);
+    // Shoulders (rounded)
+    this.graphics.drawCircle(-halfWidth + 8, -halfHeight + 10, 12);
+    this.graphics.drawCircle(halfWidth - 8, -halfHeight + 10, 12);
+    // Torso
+    this.graphics.drawRoundedRect(-halfWidth + 5, -halfHeight + 5, this.width - 10, this.height * 0.55, 8);
     this.graphics.endFill();
 
-    // Arms
-    this.graphics.lineStyle(6, 0xFFCC99);
-    this.graphics.moveTo(-halfWidth + 5, -halfHeight + 20);
-    this.graphics.lineTo(-halfWidth - 10, 0);
-    this.graphics.moveTo(halfWidth - 5, -halfHeight + 20);
-    this.graphics.lineTo(halfWidth + 10, 0);
+    // Band logo/design on shirt
+    this.graphics.lineStyle(2, 0xFFFFFF, 0.6);
+    this.graphics.drawCircle(0, -halfHeight + 20, 10);
+    this.graphics.moveTo(-6, -halfHeight + 20);
+    this.graphics.lineTo(6, -halfHeight + 20);
+
+    // Pants/jeans
+    this.graphics.lineStyle(0);
+    this.graphics.beginFill(0x1a3a5a); // Denim blue
+    this.graphics.drawRoundedRect(-halfWidth + 8, -halfHeight + 5 + this.height * 0.55, this.width - 16, this.height * 0.3, 3);
+    this.graphics.endFill();
+
+    // Belt
+    this.graphics.lineStyle(3, 0x3a2a1a);
+    this.graphics.moveTo(-halfWidth + 8, -halfHeight + 5 + this.height * 0.55);
+    this.graphics.lineTo(halfWidth - 8, -halfHeight + 5 + this.height * 0.55);
+
+    // Arms with elbows (more natural)
+    this.graphics.lineStyle(7, 0xF5C79C);
+    this.graphics.lineCap = 'round';
+
+    // Left arm (upper arm)
+    this.graphics.moveTo(-halfWidth + 8, -halfHeight + 10);
+    this.graphics.lineTo(-halfWidth - 5, -halfHeight + 30);
+    // Left forearm
+    this.graphics.moveTo(-halfWidth - 5, -halfHeight + 30);
+    this.graphics.lineTo(-halfWidth - 15, 5);
+
+    // Right arm (upper arm)
+    this.graphics.moveTo(halfWidth - 8, -halfHeight + 10);
+    this.graphics.lineTo(halfWidth + 5, -halfHeight + 30);
+    // Right forearm
+    this.graphics.moveTo(halfWidth + 5, -halfHeight + 30);
+    this.graphics.lineTo(halfWidth + 15, 5);
+
+    // Hands
+    this.graphics.lineStyle(0);
+    this.graphics.beginFill(0xF5C79C);
+    this.graphics.drawCircle(-halfWidth - 15, 5, 5);
+    this.graphics.drawCircle(halfWidth + 15, 5, 5);
+    this.graphics.endFill();
 
     // Draw instrument
     if (this.instrument === 'guitar') {
@@ -70,6 +137,26 @@ export class BandMember {
     } else if (this.instrument === 'bass') {
       this.drawBass();
     }
+
+    // Legs (proper proportions)
+    this.graphics.lineStyle(9, 0x1a3a5a);
+    this.graphics.lineCap = 'round';
+    this.graphics.moveTo(-8, halfHeight - this.height * 0.3);
+    this.graphics.lineTo(-9, halfHeight - 3);
+    this.graphics.moveTo(8, halfHeight - this.height * 0.3);
+    this.graphics.lineTo(9, halfHeight - 3);
+
+    // Shoes (sneakers)
+    this.graphics.lineStyle(0);
+    this.graphics.beginFill(0x222222);
+    this.graphics.drawRoundedRect(-16, halfHeight - 6, 12, 7, 2);
+    this.graphics.drawRoundedRect(4, halfHeight - 6, 12, 7, 2);
+    this.graphics.endFill();
+    // Shoe highlights
+    this.graphics.beginFill(0xFFFFFF, 0.3);
+    this.graphics.drawRect(-14, halfHeight - 5, 3, 2);
+    this.graphics.drawRect(6, halfHeight - 5, 3, 2);
+    this.graphics.endFill();
 
     // Position graphics
     this.graphics.x = this.x;

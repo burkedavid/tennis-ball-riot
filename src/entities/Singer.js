@@ -58,86 +58,149 @@ export class Singer {
     const halfWidth = this.width / 2;
     const halfHeight = this.height / 2;
 
-    // WILD SPIKY HAIR (Iggy's iconic look)
-    this.graphics.beginFill(0x222222);
-    // Multiple spikes pointing up and out
-    for (let i = -2; i <= 2; i++) {
-      const spikeX = i * 8;
-      const spikeHeight = 15 + Math.abs(i) * 3;
-      this.graphics.drawCircle(spikeX, -halfHeight - 25 - spikeHeight, 8);
+    // WILD SPIKY HAIR (Iggy's iconic messy look)
+    this.graphics.beginFill(0x1a1a1a); // Dark brown/black
+    // Multiple wild spikes in different directions
+    for (let i = -3; i <= 3; i++) {
+      const spikeX = i * 7;
+      const spikeHeight = 12 + Math.random() * 8;
+      const spikeOffset = Math.random() * 5 - 2.5;
+      this.graphics.drawCircle(spikeX + spikeOffset, -halfHeight - 28 - spikeHeight, 7);
     }
+    // Add more wild hair volume
+    this.graphics.drawEllipse(0, -halfHeight - 30, 22, 12);
     this.graphics.endFill();
 
-    // Head (lean face)
-    this.graphics.beginFill(0xFFCC99);
-    this.graphics.drawEllipse(0, -halfHeight - 18, 18, 22);
+    // Neck (visible, skinny)
+    this.graphics.lineStyle(0);
+    this.graphics.beginFill(0xF5C79C); // Tan skin
+    this.graphics.drawRect(-6, -halfHeight - 8, 12, 15);
     this.graphics.endFill();
 
-    // Eyes (intense stare)
+    // Head (angular, lean face)
+    this.graphics.beginFill(0xF5C79C);
+    this.graphics.drawCircle(0, -halfHeight - 20, 20);
+    this.graphics.endFill();
+
+    // Jaw definition
+    this.graphics.lineStyle(2, 0xD4A574, 0.5);
+    this.graphics.arc(0, -halfHeight - 15, 15, Math.PI / 4, Math.PI * 3 / 4);
+
+    // Eyes (intense, wild)
+    this.graphics.lineStyle(0);
+    this.graphics.beginFill(0xFFFFFF);
+    this.graphics.drawCircle(-7, -halfHeight - 22, 4);
+    this.graphics.drawCircle(7, -halfHeight - 22, 4);
+    this.graphics.endFill();
     this.graphics.beginFill(0x000000);
-    this.graphics.drawCircle(-6, -halfHeight - 20, 3);
-    this.graphics.drawCircle(6, -halfHeight - 20, 3);
+    this.graphics.drawCircle(-7, -halfHeight - 21, 3);
+    this.graphics.drawCircle(7, -halfHeight - 21, 3);
     this.graphics.endFill();
 
-    // Mouth (singing/screaming)
-    this.graphics.lineStyle(2, 0x000000);
-    this.graphics.arc(0, -halfHeight - 10, 6, 0, Math.PI);
+    // Mouth (singing/screaming - wide open)
+    this.graphics.beginFill(0x330000);
+    this.graphics.drawEllipse(0, -halfHeight - 12, 8, 6);
+    this.graphics.endFill();
 
-    // SHIRTLESS TORSO (skinny, defined)
+    // SHIRTLESS TORSO - Defined muscles (Iggy is ripped!)
+    this.graphics.beginFill(0xF5C79C);
+    // Chest/shoulders (wider at top)
+    this.graphics.drawRect(-20, -halfHeight + 8, 40, 25);
+    // Narrow waist
+    this.graphics.drawRect(-15, -halfHeight + 33, 30, 25);
+    this.graphics.endFill();
+
+    // Muscle definition (pecs and abs)
+    this.graphics.lineStyle(2, 0xD4A574, 0.6);
+    // Pec lines
+    this.graphics.arc(-8, -halfHeight + 15, 8, Math.PI / 3, Math.PI * 2 / 3);
+    this.graphics.arc(8, -halfHeight + 15, 8, Math.PI / 3, Math.PI * 2 / 3);
+    // Abs
+    this.graphics.moveTo(-5, -halfHeight + 28);
+    this.graphics.lineTo(-5, -halfHeight + 50);
+    this.graphics.moveTo(5, -halfHeight + 28);
+    this.graphics.lineTo(5, -halfHeight + 50);
+    this.graphics.moveTo(-8, -halfHeight + 35);
+    this.graphics.lineTo(8, -halfHeight + 35);
+    this.graphics.moveTo(-8, -halfHeight + 43);
+    this.graphics.lineTo(8, -halfHeight + 43);
+
+    // Leather pants (tight, black)
     this.graphics.lineStyle(0);
-    this.graphics.beginFill(0xFFCC99);
-    // Skinny torso
-    this.graphics.drawRoundedRect(-halfWidth * 0.6, -halfHeight + 5, this.width * 0.6, this.height * 0.5, 3);
+    this.graphics.beginFill(0x0a0a0a);
+    this.graphics.drawRoundedRect(-18, -halfHeight + 58, 36, this.height * 0.35, 2);
     this.graphics.endFill();
 
-    // Leather pants (tight)
-    this.graphics.beginFill(0x111111);
-    this.graphics.drawRoundedRect(-halfWidth * 0.7, -halfHeight + 5 + this.height * 0.5, this.width * 0.7, this.height * 0.3, 3);
-    this.graphics.endFill();
-
-    // Belt/waistband
-    this.graphics.lineStyle(3, 0x666666);
-    this.graphics.moveTo(-halfWidth * 0.7, -halfHeight + 5 + this.height * 0.5);
-    this.graphics.lineTo(halfWidth * 0.7, -halfHeight + 5 + this.height * 0.5);
-
-    // Arms (lean, energetic)
-    this.graphics.lineStyle(5, 0xFFCC99);
-
-    // Left arm (extended out with energy)
-    this.graphics.moveTo(-halfWidth * 0.6, -halfHeight + 15);
-    this.graphics.lineTo(-halfWidth - 15, -5);
-
-    // Right arm holding MICROPHONE (extended forward)
-    this.graphics.moveTo(halfWidth * 0.6, -halfHeight + 15);
-    this.graphics.lineTo(halfWidth + 10, -8);
-
-    // Microphone (prominent)
+    // Belt with silver buckle
+    this.graphics.lineStyle(4, 0x333333);
+    this.graphics.moveTo(-18, -halfHeight + 58);
+    this.graphics.lineTo(18, -halfHeight + 58);
     this.graphics.lineStyle(0);
-    this.graphics.beginFill(0x333333);
-    this.graphics.drawCircle(halfWidth + 10, -8, 8);
+    this.graphics.beginFill(0xAAAAAA);
+    this.graphics.drawRect(-5, -halfHeight + 56, 10, 6);
     this.graphics.endFill();
-    // Mic highlight
-    this.graphics.beginFill(0x666666);
-    this.graphics.drawCircle(halfWidth + 12, -10, 3);
+
+    // Arms (lean, sinewy, energetic)
+    this.graphics.lineStyle(8, 0xF5C79C);
+    this.graphics.lineCap = 'round';
+
+    // Left arm (raised high, rock gesture)
+    this.graphics.moveTo(-20, -halfHeight + 12);
+    this.graphics.lineTo(-35, -halfHeight - 10);
+    // Forearm
+    this.graphics.moveTo(-35, -halfHeight - 10);
+    this.graphics.lineTo(-32, -halfHeight - 25);
+
+    // Right arm holding MICROPHONE (extended dramatically)
+    this.graphics.moveTo(20, -halfHeight + 12);
+    this.graphics.lineTo(42, -halfHeight + 5);
+    // Forearm
+    this.graphics.moveTo(42, -halfHeight + 5);
+    this.graphics.lineTo(50, -halfHeight - 5);
+
+    // Hand on mic
+    this.graphics.lineStyle(0);
+    this.graphics.beginFill(0xF5C79C);
+    this.graphics.drawCircle(50, -halfHeight - 5, 6);
+    this.graphics.endFill();
+
+    // Microphone (chrome, prominent)
+    this.graphics.beginFill(0x888888);
+    this.graphics.drawRoundedRect(48, -halfHeight - 12, 12, 18, 6);
+    this.graphics.endFill();
+    // Mic grille
+    this.graphics.beginFill(0x555555);
+    this.graphics.drawCircle(54, -halfHeight - 3, 5);
+    this.graphics.endFill();
+    // Shine
+    this.graphics.beginFill(0xDDDDDD);
+    this.graphics.drawCircle(52, -halfHeight - 6, 3);
     this.graphics.endFill();
 
     // Microphone cord
-    this.graphics.lineStyle(2, 0x444444);
-    this.graphics.moveTo(halfWidth + 10, -8);
-    this.graphics.quadraticCurveTo(halfWidth + 5, 10, halfWidth - 10, 30);
+    this.graphics.lineStyle(3, 0x222222);
+    this.graphics.moveTo(50, -halfHeight - 5);
+    this.graphics.quadraticCurveTo(45, 5, 35, 25);
+    this.graphics.quadraticCurveTo(25, 40, 15, halfHeight - 10);
 
     // Legs (skinny, leather pants)
-    this.graphics.lineStyle(7, 0x111111);
-    this.graphics.moveTo(-8, halfHeight - this.height * 0.3);
-    this.graphics.lineTo(-10, halfHeight);
-    this.graphics.moveTo(8, halfHeight - this.height * 0.3);
-    this.graphics.lineTo(10, halfHeight);
+    this.graphics.lineStyle(11, 0x0a0a0a);
+    this.graphics.lineCap = 'round';
+    this.graphics.moveTo(-9, halfHeight - this.height * 0.35);
+    this.graphics.lineTo(-11, halfHeight - 5);
+    this.graphics.moveTo(9, halfHeight - this.height * 0.35);
+    this.graphics.lineTo(11, halfHeight - 5);
 
-    // Boots
+    // Boots (chunky rock boots)
     this.graphics.lineStyle(0);
     this.graphics.beginFill(0x000000);
-    this.graphics.drawRect(-15, halfHeight - 5, 10, 8);
-    this.graphics.drawRect(5, halfHeight - 5, 10, 8);
+    this.graphics.drawRoundedRect(-18, halfHeight - 8, 14, 10, 2);
+    this.graphics.drawRoundedRect(4, halfHeight - 8, 14, 10, 2);
+    this.graphics.endFill();
+    // Boot shine
+    this.graphics.beginFill(0x333333);
+    this.graphics.drawRect(-16, halfHeight - 7, 4, 3);
+    this.graphics.drawRect(6, halfHeight - 7, 4, 3);
     this.graphics.endFill();
   }
 

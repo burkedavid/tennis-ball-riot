@@ -90,47 +90,80 @@ export class Glass {
   }
 
   /**
-   * Update glow effect - ALWAYS VISIBLE TARGET!
+   * Update glow effect - ALWAYS VISIBLE TARGET with pulsing animation!
    */
   updateGlow() {
     this.glowGraphics.clear();
 
-    // TARGET INDICATOR - Always visible bright circle
-    this.glowGraphics.beginFill(0x00FFFF, 0.3);
-    this.glowGraphics.drawCircle(
-      this.x,
-      this.y - this.height / 2,
-      this.targetRadius * 1.2
-    );
+    const targetX = this.x;
+    const targetY = this.y - this.height / 2;
+
+    // Pulse effect (oscillates between 0.8 and 1.2)
+    const pulse = 1.0 + Math.sin(this.pulseTimer) * 0.2;
+
+    // OUTER GLOW RING - Huge, pulsing
+    this.glowGraphics.beginFill(0x00FFFF, 0.15 * pulse);
+    this.glowGraphics.drawCircle(targetX, targetY, this.targetRadius * 2.0 * pulse);
     this.glowGraphics.endFill();
 
-    // Inner glow
-    this.glowGraphics.beginFill(0x00FFFF, 0.5);
-    this.glowGraphics.drawCircle(
-      this.x,
-      this.y - this.height / 2,
-      this.targetRadius * 0.8
-    );
+    // MIDDLE GLOW RING
+    this.glowGraphics.beginFill(0x00FFFF, 0.25 * pulse);
+    this.glowGraphics.drawCircle(targetX, targetY, this.targetRadius * 1.4 * pulse);
     this.glowGraphics.endFill();
 
-    // Bright center marker
-    this.glowGraphics.beginFill(0xFFFFFF, 0.7);
-    this.glowGraphics.drawCircle(
-      this.x,
-      this.y - this.height / 2,
-      8
-    );
+    // INNER GLOW - Bright cyan
+    this.glowGraphics.beginFill(0x00FFFF, 0.45 * pulse);
+    this.glowGraphics.drawCircle(targetX, targetY, this.targetRadius * 0.9);
     this.glowGraphics.endFill();
 
-    // Target crosshair
-    this.glowGraphics.lineStyle(3, 0xFFFF00, 0.8);
-    const crossSize = 15;
+    // CORE - Bright white center
+    this.glowGraphics.beginFill(0xFFFFFF, 0.85);
+    this.glowGraphics.drawCircle(targetX, targetY, 12);
+    this.glowGraphics.endFill();
+
+    // PULSING YELLOW CORE
+    this.glowGraphics.beginFill(0xFFFF00, 0.7 * pulse);
+    this.glowGraphics.drawCircle(targetX, targetY, 8 * pulse);
+    this.glowGraphics.endFill();
+
+    // TARGET CROSSHAIR - Large, pulsing yellow
+    this.glowGraphics.lineStyle(4, 0xFFFF00, 0.9);
+    const crossSize = 25 * pulse;
     // Horizontal line
-    this.glowGraphics.moveTo(this.x - crossSize, this.y - this.height / 2);
-    this.glowGraphics.lineTo(this.x + crossSize, this.y - this.height / 2);
+    this.glowGraphics.moveTo(targetX - crossSize, targetY);
+    this.glowGraphics.lineTo(targetX + crossSize, targetY);
     // Vertical line
-    this.glowGraphics.moveTo(this.x, this.y - this.height / 2 - crossSize);
-    this.glowGraphics.lineTo(this.x, this.y - this.height / 2 + crossSize);
+    this.glowGraphics.moveTo(targetX, targetY - crossSize);
+    this.glowGraphics.lineTo(targetX, targetY + crossSize);
+
+    // TARGET CIRCLE - Pulsing ring
+    this.glowGraphics.lineStyle(3, 0x00FFFF, 0.8 * pulse);
+    this.glowGraphics.drawCircle(targetX, targetY, this.targetRadius * pulse);
+
+    // OUTER TARGET RING - Rotating indicator
+    this.glowGraphics.lineStyle(2, 0xFFFFFF, 0.6);
+    const ringRadius = this.targetRadius * 1.5;
+    for (let i = 0; i < 4; i++) {
+      const angle = (this.pulseTimer * 2 + (i * Math.PI / 2)) % (Math.PI * 2);
+      const arcStart = angle;
+      const arcEnd = angle + Math.PI / 6;
+      this.glowGraphics.arc(targetX, targetY, ringRadius, arcStart, arcEnd);
+    }
+
+    // "AIM HERE" visual indicator - Animated brackets
+    this.glowGraphics.lineStyle(5, 0xFF00FF, 0.7);
+    const bracketSize = 30;
+    const bracketDist = this.targetRadius * 1.8 * pulse;
+    // Top bracket
+    this.glowGraphics.moveTo(targetX - bracketSize / 2, targetY - bracketDist);
+    this.glowGraphics.lineTo(targetX - bracketSize / 2, targetY - bracketDist - 10);
+    this.glowGraphics.lineTo(targetX + bracketSize / 2, targetY - bracketDist - 10);
+    this.glowGraphics.lineTo(targetX + bracketSize / 2, targetY - bracketDist);
+    // Bottom bracket
+    this.glowGraphics.moveTo(targetX - bracketSize / 2, targetY + bracketDist);
+    this.glowGraphics.lineTo(targetX - bracketSize / 2, targetY + bracketDist + 10);
+    this.glowGraphics.lineTo(targetX + bracketSize / 2, targetY + bracketDist + 10);
+    this.glowGraphics.lineTo(targetX + bracketSize / 2, targetY + bracketDist);
   }
 
   /**
@@ -164,11 +197,11 @@ export class Glass {
    * @param {number} deltaTime
    */
   update(deltaTime) {
-    // Pulse glow effect
-    if (this.glowIntensity > 0) {
-      this.glowIntensity *= 0.95; // Fade out
-      this.updateGlow();
-    }
+    // ALWAYS update pulse timer for constant animation
+    this.pulseTimer += deltaTime * 0.003; // Smooth pulsing speed
+
+    // Always update glow to show pulsing animation
+    this.updateGlow();
 
     // Splash animation
     if (this.splashing) {
