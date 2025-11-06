@@ -92,21 +92,35 @@ export class Game {
     // Original aspect ratio (1200x800 = 3:2 = 1.5)
     const targetAspectRatio = CANVAS_WIDTH / CANVAS_HEIGHT;
 
-    // Calculate size that fits screen while maintaining aspect ratio
-    let canvasWidth = screenWidth;
-    let canvasHeight = screenWidth / targetAspectRatio;
+    // Check if mobile (width <= 768px)
+    const isMobile = screenWidth <= 768;
 
-    // If height is too tall, scale based on height instead
-    if (canvasHeight > screenHeight) {
+    let canvasWidth, canvasHeight;
+
+    if (isMobile) {
+      // MOBILE: Fill the entire screen
+      canvasWidth = screenWidth;
       canvasHeight = screenHeight;
-      canvasWidth = screenHeight * targetAspectRatio;
+
+      console.log(`📱 MOBILE MODE - Full screen: ${Math.round(canvasWidth)}x${Math.round(canvasHeight)}`);
+    } else {
+      // DESKTOP: Maintain aspect ratio and cap at original size
+      canvasWidth = screenWidth;
+      canvasHeight = screenWidth / targetAspectRatio;
+
+      // If height is too tall, scale based on height instead
+      if (canvasHeight > screenHeight) {
+        canvasHeight = screenHeight;
+        canvasWidth = screenHeight * targetAspectRatio;
+      }
+
+      // Cap at original size on desktop
+      canvasWidth = Math.min(canvasWidth, CANVAS_WIDTH);
+      canvasHeight = Math.min(canvasHeight, CANVAS_HEIGHT);
+
+      console.log(`💻 DESKTOP MODE - Canvas: ${Math.round(canvasWidth)}x${Math.round(canvasHeight)}`);
     }
 
-    // Cap at original size on desktop
-    canvasWidth = Math.min(canvasWidth, CANVAS_WIDTH);
-    canvasHeight = Math.min(canvasHeight, CANVAS_HEIGHT);
-
-    console.log(`📱 Canvas size: ${Math.round(canvasWidth)}x${Math.round(canvasHeight)}`);
     console.log(`📱 Screen size: ${screenWidth}x${screenHeight}`);
 
     return {
@@ -139,14 +153,15 @@ export class Game {
     // Add to DOM
     document.getElementById('game-container').appendChild(this.app.view);
 
-    // Make canvas responsive with CSS
-    this.app.view.style.width = '100%';
-    this.app.view.style.height = 'auto';
-    this.app.view.style.maxWidth = `${CANVAS_WIDTH}px`;
+    // Canvas styling is handled by CSS in index.html
     this.app.view.style.display = 'block';
 
     // Create main containers
     this.gameContainer = new PIXI.Container();
+
+    // Scale game container to match canvas size
+    this.gameContainer.scale.set(this.scaleX, this.scaleY);
+
     this.app.stage.addChild(this.gameContainer);
 
     // Initialize particle system
@@ -197,6 +212,11 @@ export class Game {
         // Update scale factors
         this.scaleX = newSize.width / CANVAS_WIDTH;
         this.scaleY = newSize.height / CANVAS_HEIGHT;
+
+        // Scale game container to match new size
+        if (this.gameContainer) {
+          this.gameContainer.scale.set(this.scaleX, this.scaleY);
+        }
 
         console.log('🔄 Canvas resized to:', newSize);
       }, 250);
