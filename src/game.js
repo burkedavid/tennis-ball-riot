@@ -582,62 +582,109 @@ export class Game {
         const sizeMult = 1 + (row * 0.4);
         const headSize = 25 * sizeMult;
 
-        // VISIBLE silhouettes - dark gray with variety
-        const crowdShade = 0x333333 + Math.floor(Math.random() * 0x222222); // Varied grays
-        graphics.beginFill(crowdShade, 0.95);
+        // Depth-based shading: farther back = darker, closer = lighter
+        // Back rows (0-1) are darkest, front rows (4-5) are lighter
+        const depthShade = 0x1a1a1a + (row * 0x0a0a0a); // Gradual lightening
 
-        // Head
+        // Concert crowd silhouette
+        graphics.beginFill(depthShade, 0.95);
+
+        // Head (circular)
         graphics.drawCircle(x, y, headSize);
 
-        // Shoulders (wider than head)
-        graphics.drawEllipse(x, y + headSize * 1.2, headSize * 1.5, headSize * 0.8);
+        // Neck
+        graphics.drawRect(x - headSize * 0.3, y + headSize * 0.7, headSize * 0.6, headSize * 0.5);
 
+        // Shoulders/upper body (trapezoid shape)
+        graphics.beginFill(depthShade, 0.95);
+        graphics.moveTo(x - headSize * 0.4, y + headSize * 1.1);
+        graphics.lineTo(x + headSize * 0.4, y + headSize * 1.1);
+        graphics.lineTo(x + headSize * 0.9, y + headSize * 2.2);
+        graphics.lineTo(x - headSize * 0.9, y + headSize * 2.2);
+        graphics.closePath();
         graphics.endFill();
 
-        // Brighter edge highlight to make silhouettes POP
-        graphics.lineStyle(2, 0x555555, 0.7);  // Much brighter outline
-        graphics.drawCircle(x - 2, y - 2, headSize);
+        // Subtle rim light on one side (concert lighting)
+        graphics.lineStyle(1, 0x4a4a5a, 0.4);
+        graphics.arc(x - headSize * 0.6, y, headSize, -Math.PI / 2, Math.PI / 2);
         graphics.lineStyle(0);
 
-        // Occasionally add raised arm silhouette
-        if (Math.random() < 0.3) {
-          graphics.beginFill(0x000000, 0.9);
-          const armX = x + (Math.random() < 0.5 ? -headSize : headSize);
-          const armY = y - headSize * 1.5;
-          // Raised arm (triangle/cone shape)
-          graphics.moveTo(x + headSize * 0.7, y);
-          graphics.lineTo(armX, armY);
-          graphics.lineTo(armX - 10, armY + 20);
-          graphics.closePath();
-          graphics.endFill();
-        }
+        // Randomly add concert-goer details
+        const pose = Math.random();
 
-        // Add wild hair to some (spiky concert hair)
-        if (Math.random() < 0.5) {
-          graphics.beginFill(0x000000, 0.95);
-          // Multiple spikes
-          for (let s = -1; s <= 1; s++) {
-            graphics.drawCircle(
-              x + s * headSize * 0.4,
-              y - headSize * 0.9,
-              headSize * 0.4
-            );
-          }
+        if (pose < 0.3) {
+          // Raised fist in the air (rock on!)
+          const fistSide = Math.random() < 0.5 ? -1 : 1;
+          graphics.beginFill(depthShade, 0.95);
+          // Arm
+          graphics.drawRect(
+            x + fistSide * headSize * 0.5,
+            y - headSize * 0.5,
+            headSize * 0.3,
+            headSize * 1.8
+          );
+          // Fist
+          graphics.drawCircle(
+            x + fistSide * headSize * 0.65,
+            y - headSize * 0.7,
+            headSize * 0.35
+          );
           graphics.endFill();
-        }
+        } else if (pose < 0.45) {
+          // Both arms raised (going wild!)
+          graphics.beginFill(depthShade, 0.95);
+          // Left arm
+          graphics.drawRect(x - headSize * 0.6, y - headSize * 0.3, headSize * 0.25, headSize * 1.5);
+          graphics.drawCircle(x - headSize * 0.5, y - headSize * 0.5, headSize * 0.3);
+          // Right arm
+          graphics.drawRect(x + headSize * 0.35, y - headSize * 0.3, headSize * 0.25, headSize * 1.5);
+          graphics.drawCircle(x + headSize * 0.5, y - headSize * 0.5, headSize * 0.3);
+          graphics.endFill();
+        } else if (pose < 0.6) {
+          // Holding phone up (recording)
+          const phoneSide = Math.random() < 0.5 ? -1 : 1;
+          // Arm holding phone
+          graphics.beginFill(depthShade, 0.95);
+          graphics.drawRect(
+            x + phoneSide * headSize * 0.4,
+            y - headSize * 0.2,
+            headSize * 0.25,
+            headSize * 1.3
+          );
+          graphics.endFill();
 
-        // Phone lights (some people recording) - use own position
-        if (Math.random() < 0.15) {
-          const phoneX = x + headSize;
-          const phoneY = y - headSize;
-          graphics.beginFill(0xFFFFFF, 0.8);
-          graphics.drawRect(phoneX, phoneY, 8, 12);
+          // Phone with bright screen
+          const phoneX = x + phoneSide * headSize * 0.5;
+          const phoneY = y - headSize * 0.4;
+          graphics.beginFill(0xFFFFFF, 0.9);
+          graphics.drawRoundedRect(phoneX - 4, phoneY - 6, 8, 14, 2);
           graphics.endFill();
           // Phone glow
-          graphics.beginFill(0x88CCFF, 0.3);
-          graphics.drawCircle(phoneX + 4, phoneY + 6, 15);
+          graphics.beginFill(0x66AAFF, 0.25);
+          graphics.drawCircle(phoneX, phoneY, 18);
           graphics.endFill();
         }
+
+        // Add hair variety (spiky, long, or short)
+        const hairStyle = Math.random();
+        graphics.beginFill(depthShade - 0x0a0a0a, 0.95); // Slightly darker for hair
+
+        if (hairStyle < 0.4) {
+          // Spiky punk hair
+          for (let spike = 0; spike < 5; spike++) {
+            const spikeAngle = -Math.PI / 2 + (spike - 2) * 0.4;
+            const spikeX = x + Math.cos(spikeAngle) * headSize * 0.6;
+            const spikeY = y - headSize + Math.sin(spikeAngle) * headSize * 0.6;
+            graphics.drawCircle(spikeX, spikeY, headSize * 0.25);
+          }
+        } else if (hairStyle < 0.7) {
+          // Long flowing hair
+          graphics.drawEllipse(x, y - headSize * 0.2, headSize * 0.95, headSize * 1.3);
+        } else {
+          // Short/buzzed hair (just add to head)
+          graphics.drawCircle(x, y - headSize * 0.1, headSize * 0.85);
+        }
+        graphics.endFill();
       }
     }
 
