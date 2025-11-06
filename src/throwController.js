@@ -14,8 +14,8 @@ export const THROW_CONFIG = {
   MAX_DRAG_DISTANCE: 200,       // Maximum drag length for max power
 
   // Power scaling
-  MIN_THROW_FORCE: 5,           // Minimum velocity (units/second)
-  MAX_THROW_FORCE: 25,          // Maximum velocity (units/second)
+  MIN_THROW_FORCE: 8,           // Minimum velocity (pixels per frame)
+  MAX_THROW_FORCE: 20,          // Maximum velocity (pixels per frame)
 
   // Angle constraints
   MIN_THROW_ANGLE: -85,         // Degrees (almost straight up)

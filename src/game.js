@@ -60,6 +60,7 @@ export class Game {
     this.stage = null;
     this.crowd = [];
     this.obstacles = [];
+    this.ballTrail = [];
 
     // Game state flags
     this.ballInFlight = false;
@@ -694,8 +695,14 @@ export class Game {
       y: velocity.y + this.bumpOffsetY
     };
 
+    console.log('🎾 Throwing ball with velocity:', finalVelocity);
+    console.log('🎾 Ball start position:', ENTITIES.ball.startX, ENTITIES.ball.startY);
+
     // Throw ball with velocity vector (with bump offset if applicable)
     this.activeBall.throwWithVelocity(finalVelocity.x, finalVelocity.y);
+
+    // Clear previous trail
+    this.clearBallTrail();
 
     // Update state
     this.ballsRemaining--;
@@ -832,6 +839,10 @@ export class Game {
         this.activeBall.destroy();
         this.activeBall = null;
       }
+
+      // Clear trail
+      this.clearBallTrail();
+
       this.ballInFlight = false;
       this.canThrow = true;
 
@@ -865,6 +876,10 @@ export class Game {
       this.activeBall.destroy();
       this.activeBall = null;
     }
+
+    // Clear trail
+    this.clearBallTrail();
+
     this.ballInFlight = false;
     this.canThrow = true;
 
@@ -1083,6 +1098,16 @@ export class Game {
       }
       if (this.activeBall) {
         this.activeBall.update();
+
+        // Update ball trail
+        this.updateBallTrail();
+
+        // Debug: log ball position every frame
+        const pos = this.activeBall.getPosition();
+        const vel = this.activeBall.getVelocity();
+        if (Math.abs(vel.x) > 0.1 || Math.abs(vel.y) > 0.1) {
+          console.log(`📍 Ball pos: (${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}), vel: (${vel.x.toFixed(2)}, ${vel.y.toFixed(2)})`);
+        }
       }
 
       // Update obstacles (for animated ones like spinning lights)
@@ -1098,6 +1123,45 @@ export class Game {
         this.triggerCrowdBump();
       }
     }
+  }
+
+  /**
+   * Update ball trail (adds trail dots behind the ball)
+   */
+  updateBallTrail() {
+    if (!this.activeBall) return;
+
+    const pos = this.activeBall.getPosition();
+
+    // Add trail dot every few frames
+    if (this.ballTrail.length === 0 ||
+        Math.abs(pos.x - this.ballTrail[this.ballTrail.length - 1].x) > 10 ||
+        Math.abs(pos.y - this.ballTrail[this.ballTrail.length - 1].y) > 10) {
+
+      const dot = new PIXI.Graphics();
+      dot.beginFill(0x9FCD2A, 0.5); // Green with transparency
+      dot.drawCircle(pos.x, pos.y, 3);
+      dot.endFill();
+
+      this.gameContainer.addChild(dot);
+      this.ballTrail.push({ graphics: dot, x: pos.x, y: pos.y });
+
+      // Limit trail length
+      if (this.ballTrail.length > 30) {
+        const old = this.ballTrail.shift();
+        old.graphics.destroy();
+      }
+    }
+  }
+
+  /**
+   * Clear ball trail
+   */
+  clearBallTrail() {
+    this.ballTrail.forEach(dot => {
+      dot.graphics.destroy();
+    });
+    this.ballTrail = [];
   }
 }
 
