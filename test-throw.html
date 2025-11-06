@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ball Trajectory Test</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #1a1a1a;
+      color: #fff;
+    }
+    .test-result {
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 4px;
+    }
+    .success { background: #0a4; }
+    .fail { background: #a40; }
+    button {
+      padding: 10px 20px;
+      margin: 10px 0;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #results {
+      margin-top: 20px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎾 Tennis Ball Trajectory Test</h1>
+  <p>Testing different throw angles and velocities to find sweet spots for hitting the glass</p>
+
+  <button onclick="runTests()">Run Tests</button>
+  <button onclick="clearResults()">Clear Results</button>
+
+  <div id="stats"></div>
+  <div id="results"></div>
+
+  <script type="module">
+    // Game constants
+    const CANVAS_WIDTH = 1200;
+    const CANVAS_HEIGHT = 800;
+
+    const BALL_START_X = CANVAS_WIDTH / 2;  // 600
+    const BALL_START_Y = CANVAS_HEIGHT - 50; // 750
+
+    const GLASS_X = 1000;
+    const GLASS_Y = 310;
+    const GLASS_TARGET_RADIUS = 70;
+
+    const GRAVITY = 0.4;
+    const AIR_RESISTANCE = 0.008;
+    const THROW_FORCE_MULTIPLIER = 0.06;
+
+    // Simulate ball physics
+    function simulateThrow(velocityX, velocityY, maxSteps = 300) {
+      let x = BALL_START_X;
+      let y = BALL_START_Y;
+      let vx = velocityX;
+      let vy = velocityY;
+
+      const positions = [];
+
+      for (let step = 0; step < maxSteps; step++) {
+        // Store position
+        positions.push({ x, y, step });
+
+        // Check if hit glass target
+        const distToGlass = Math.sqrt(
+          Math.pow(x - GLASS_X, 2) +
+          Math.pow(y - GLASS_Y, 2)
+        );
+
+        if (distToGlass <= GLASS_TARGET_RADIUS) {
+          return {
+            hit: true,
+            step,
+            finalX: x,
+            finalY: y,
+            distance: distToGlass,
+            positions
+          };
+        }
+
+        // Check if ball went off screen
+        if (x < 0 || x > CANVAS_WIDTH || y > CANVAS_HEIGHT) {
+          return {
+            hit: false,
+            reason: 'off-screen',
+            finalX: x,
+            finalY: y,
+            positions
+          };
+        }
+
+        // Apply physics
+        x += vx;
+        y += vy;
+        vy += GRAVITY; // Gravity
+
+        // Air resistance
+        const speed = Math.sqrt(vx * vx + vy * vy);
+        if (speed > 0) {
+          const dragForce = AIR_RESISTANCE * speed;
+          vx *= (1 - dragForce);
+          vy *= (1 - dragForce);
+        }
+      }
+
+      return {
+        hit: false,
+        reason: 'max-steps',
+        finalX: x,
+        finalY: y,
+        positions
+      };
+    }
+
+    window.runTests = function() {
+      const results = [];
+      let successCount = 0;
+
+      // Test different angles and powers
+      for (let angle = -85; angle <= 85; angle += 5) {
+        for (let force = 6; force <= 15; force += 1) {
+          const angleRad = angle * (Math.PI / 180);
+          const vx = Math.cos(angleRad) * force;
+          const vy = Math.sin(angleRad) * force;
+
+          const result = simulateThrow(vx, vy);
+
+          if (result.hit) {
+            successCount++;
+            results.push({
+              angle,
+              force,
+              vx: vx.toFixed(2),
+              vy: vy.toFixed(2),
+              distance: result.distance.toFixed(1),
+              steps: result.step,
+              success: true
+            });
+          }
+        }
+      }
+
+      // Sort by distance (closest to center first)
+      results.sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
+
+      // Display results
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = '';
+
+      const statsDiv = document.getElementById('stats');
+      statsDiv.innerHTML = `<h2>📊 Results: ${successCount} successful trajectories found!</h2>`;
+
+      if (results.length > 0) {
+        statsDiv.innerHTML += `<p>✅ BEST SHOT: Angle ${results[0].angle}°, Force ${results[0].force} (distance to center: ${results[0].distance}px)</p>`;
+
+        results.slice(0, 20).forEach((r, i) => {
+          const div = document.createElement('div');
+          div.className = 'test-result success';
+          div.innerHTML = `
+            <strong>#${i + 1} HIT!</strong>
+            Angle: ${r.angle}° | Force: ${r.force} |
+            Velocity: (${r.vx}, ${r.vy}) |
+            Distance to center: ${r.distance}px |
+            Steps: ${r.steps}
+          `;
+          resultsDiv.appendChild(div);
+        });
+      } else {
+        statsDiv.innerHTML += `<p style="color: #f44">❌ NO SUCCESSFUL SHOTS FOUND! The glass may be unreachable with current settings.</p>`;
+      }
+    };
+
+    window.clearResults = function() {
+      document.getElementById('results').innerHTML = '';
+      document.getElementById('stats').innerHTML = '';
+    };
+
+    // Auto-run on load
+    window.addEventListener('load', () => {
+      setTimeout(runTests, 500);
+    });
+  </script>
+</body>
+</html>

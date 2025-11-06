@@ -119,9 +119,20 @@ export class ThrowController {
    * Handle pointer down (start flick)
    */
   handlePointerDown(screenX, screenY) {
+    console.log('👆 POINTER DOWN - Screen coords:', screenX, screenY);
+
     const canvas = document.querySelector('canvas');
+    if (!canvas) {
+      console.error('❌ Canvas not found!');
+      return;
+    }
+
     const rect = canvas.getBoundingClientRect();
+    console.log('📐 Canvas rect:', rect);
+    console.log('📐 Scale factors:', this.scaleX, this.scaleY);
+
     const pos = this.screenToCanvas(screenX, screenY, rect);
+    console.log('🎯 Game world coords:', pos);
 
     this.isDragging = true;
     this.dragStart = { x: pos.x, y: pos.y }; // CHANGED: Start from touch point, not ball
@@ -131,9 +142,16 @@ export class ThrowController {
 
     if (this.dragArrow) {
       this.dragArrow.show();
+      console.log('✅ Drag arrow shown');
+    } else {
+      console.warn('⚠️ Drag arrow not initialized');
     }
+
     if (this.trajectoryPreview) {
       this.trajectoryPreview.show();
+      console.log('✅ Trajectory preview shown');
+    } else {
+      console.warn('⚠️ Trajectory preview not initialized');
     }
 
     console.log('🎯 Flick started at:', this.dragStart);
@@ -193,10 +211,18 @@ export class ThrowController {
    * Handle pointer up (release flick)
    */
   handlePointerUp() {
-    if (!this.isDragging) return;
+    console.log('👆 POINTER UP - isDragging:', this.isDragging);
+
+    if (!this.isDragging) {
+      console.warn('⚠️ Not dragging, ignoring pointer up');
+      return;
+    }
 
     const dragDistance = this.getDragDistance();
     const flickDuration = Date.now() - this.flickStartTime;
+
+    console.log(`📏 Drag distance: ${dragDistance.toFixed(0)}px, Duration: ${flickDuration}ms`);
+    console.log(`📏 Min required: ${THROW_CONFIG.MIN_DRAG_DISTANCE}px`);
 
     // Only throw if flicked far enough
     if (dragDistance >= THROW_CONFIG.MIN_DRAG_DISTANCE) {
@@ -210,11 +236,17 @@ export class ThrowController {
 
       const force = this.calculateThrowForce();
 
-      console.log(`👆 Flick: ${dragDistance.toFixed(0)}px in ${flickDuration}ms, speed: ${flickSpeed.toFixed(2)}x`);
+      console.log(`👆 THROWING! Flick: ${dragDistance.toFixed(0)}px in ${flickDuration}ms, speed: ${flickSpeed.toFixed(2)}x`);
+      console.log(`🚀 Velocity: (${velocity.x.toFixed(2)}, ${velocity.y.toFixed(2)}), Force: ${force.toFixed(2)}`);
 
       if (this.onThrowCallback) {
+        console.log('✅ Calling onThrowCallback...');
         this.onThrowCallback(velocity, force);
+      } else {
+        console.error('❌ No onThrowCallback set!');
       }
+    } else {
+      console.warn(`⚠️ Drag too short! ${dragDistance.toFixed(0)}px < ${THROW_CONFIG.MIN_DRAG_DISTANCE}px`);
     }
 
     this.isDragging = false;
@@ -289,17 +321,25 @@ export class ThrowController {
    * Calculate velocity vector for throw
    */
   calculateThrowVelocity() {
-    const force = this.calculateThrowForce();
-    const angle = this.calculateThrowAngle();
+    // Use the smoothed vector directly, scaled to throw speed
+    // This preserves the natural flick direction and magnitude
+    const dragDistance = this.getDragDistance();
 
-    // Convert back to radians
-    const angleRad = angle * (Math.PI / 180);
+    if (dragDistance < 1) {
+      return { x: 0, y: 0 };
+    }
 
-    // Velocity components
+    // Simple approach: Use the flick vector directly with a small multiplier
+    // The smoothedVector is already in pixels, so we just need to scale it down
+    // to reasonable game velocities
+    const velocityMultiplier = 0.06; // Tune this for throw distance
+
     const velocity = {
-      x: Math.cos(angleRad) * force,
-      y: Math.sin(angleRad) * force
+      x: this.smoothedVector.x * velocityMultiplier,
+      y: this.smoothedVector.y * velocityMultiplier
     };
+
+    console.log(`🚀 Velocity calc - flickVector: (${this.smoothedVector.x.toFixed(0)}, ${this.smoothedVector.y.toFixed(0)}), result: (${velocity.x.toFixed(2)}, ${velocity.y.toFixed(2)})`);
 
     return velocity;
   }
