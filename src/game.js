@@ -1079,18 +1079,16 @@ export class Game {
     const totalLevels = getTotalLevels();
     console.log(`🎮 nextLevel() - currentLevel: ${this.currentLevel}, totalLevels: ${totalLevels}`);
 
-    if (this.currentLevel < totalLevels) {
-      this.currentLevel++;
-      console.log(`✅ Moving to level ${this.currentLevel}`);
-      this.loadLevel(this.currentLevel);
-      this.setState(GAME_STATES.PLAYING);
-      this.ui.hideAllModals();
-    } else {
-      // Game complete!
-      console.log(`🏁 All levels complete!`);
-      alert(`Congratulations! You completed all levels! Final Score: ${this.score}`);
-      this.returnToMenu();
+    // Move to next level (loop back to 1 if at end)
+    this.currentLevel++;
+    if (this.currentLevel > totalLevels) {
+      this.currentLevel = 1; // Loop back to level 1
     }
+
+    console.log(`✅ Moving to level ${this.currentLevel}`);
+    this.loadLevel(this.currentLevel);
+    this.setState(GAME_STATES.PLAYING);
+    this.ui.hideAllModals();
   }
 
   /**

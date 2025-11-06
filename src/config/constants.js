@@ -13,7 +13,7 @@ export const PHYSICS_CONFIG = {
   gravity: { x: 0, y: 0.3 },         // REDUCED gravity for longer flight (was 0.4)
   ballRestitution: 0.6,              // Ball bounciness
   glassRestitution: 0.3,             // Glass absorbs energy
-  stageRestitution: 0.5,             // Stage has medium bounce
+  stageRestitution: 0.3,             // Stage bounce reduced - more forgiving (was 0.5)
   airResistance: 0.006,              // REDUCED air resistance (was 0.008)
   spinFactor: 0.05,                  // Ball spin affects trajectory
   windStrength: 0.15,                // Wind force (when active)

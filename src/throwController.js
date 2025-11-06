@@ -325,7 +325,7 @@ export class ThrowController {
     // Simple approach: Use the flick vector directly with a small multiplier
     // The smoothedVector is already in pixels, so we just need to scale it down
     // to reasonable game velocities
-    const velocityMultiplier = 0.12; // INCREASED for more power - ball can now reach glass!
+    const velocityMultiplier = 0.15; // MAXIMUM power - easily clear stage and reach glass!
 
     const velocity = {
       x: this.smoothedVector.x * velocityMultiplier,
