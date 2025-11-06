@@ -116,7 +116,7 @@ export class ThrowController {
   }
 
   /**
-   * Handle pointer down (start drag)
+   * Handle pointer down (start flick)
    */
   handlePointerDown(screenX, screenY) {
     const canvas = document.querySelector('canvas');
@@ -124,8 +124,9 @@ export class ThrowController {
     const pos = this.screenToCanvas(screenX, screenY, rect);
 
     this.isDragging = true;
-    this.dragStart = { x: this.ballStartX, y: this.ballStartY };
+    this.dragStart = { x: pos.x, y: pos.y }; // CHANGED: Start from touch point, not ball
     this.dragCurrent = { x: pos.x, y: pos.y };
+    this.flickStartTime = Date.now();
     this.smoothedVector = { x: 0, y: 0 };
 
     if (this.dragArrow) {
@@ -135,7 +136,7 @@ export class ThrowController {
       this.trajectoryPreview.show();
     }
 
-    console.log('🎯 Drag started at game coords:', this.dragStart);
+    console.log('🎯 Flick started at:', this.dragStart);
   }
 
   /**
@@ -175,29 +176,41 @@ export class ThrowController {
 
     // Debug logging (throttled)
     if (Math.random() < 0.1) { // Log ~10% of frames
-      console.log('🎯 Dragging - vector:', this.smoothedVector, 'force:', force.toFixed(1), 'velocity:', velocity);
+      console.log('🎯 Flicking - vector:', this.smoothedVector, 'force:', force.toFixed(1));
     }
 
     if (this.dragArrow) {
       this.dragArrow.update(this.dragStart, this.smoothedVector, force);
     }
     if (this.trajectoryPreview) {
-      this.trajectoryPreview.update(this.dragStart, velocity);
+      // Show trajectory from ball position, not flick start
+      const ballPos = { x: this.ballStartX, y: this.ballStartY };
+      this.trajectoryPreview.update(ballPos, velocity);
     }
   }
 
   /**
-   * Handle pointer up (release throw)
+   * Handle pointer up (release flick)
    */
   handlePointerUp() {
     if (!this.isDragging) return;
 
     const dragDistance = this.getDragDistance();
+    const flickDuration = Date.now() - this.flickStartTime;
 
-    // Only throw if dragged far enough
+    // Only throw if flicked far enough
     if (dragDistance >= THROW_CONFIG.MIN_DRAG_DISTANCE) {
+      // Calculate flick velocity (distance / time) for more natural feel
+      const flickSpeed = Math.min(dragDistance / (flickDuration / 100), 3); // Cap multiplier
       const velocity = this.calculateThrowVelocity();
+
+      // Boost velocity based on flick speed
+      velocity.x *= (0.7 + flickSpeed * 0.3); // Faster flicks = more power
+      velocity.y *= (0.7 + flickSpeed * 0.3);
+
       const force = this.calculateThrowForce();
+
+      console.log(`👆 Flick: ${dragDistance.toFixed(0)}px in ${flickDuration}ms, speed: ${flickSpeed.toFixed(2)}x`);
 
       if (this.onThrowCallback) {
         this.onThrowCallback(velocity, force);

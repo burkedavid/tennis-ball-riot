@@ -97,24 +97,27 @@ export class Game {
 
     let canvasWidth, canvasHeight;
 
-    // ALWAYS maintain aspect ratio (both mobile and desktop)
-    // This prevents squashing on tall portrait screens
-    canvasWidth = screenWidth;
-    canvasHeight = screenWidth / targetAspectRatio;
-
-    // If height is too tall, scale based on height instead
-    if (canvasHeight > screenHeight) {
+    if (isMobile) {
+      // MOBILE: Fill entire screen (no aspect ratio constraint)
+      // This prevents squashed appearance on portrait phones
+      canvasWidth = screenWidth;
       canvasHeight = screenHeight;
-      canvasWidth = screenHeight * targetAspectRatio;
-    }
+      console.log(`📱 MOBILE MODE - Filling screen: ${Math.round(canvasWidth)}x${Math.round(canvasHeight)}`);
+    } else {
+      // DESKTOP: Maintain aspect ratio
+      canvasWidth = screenWidth;
+      canvasHeight = screenWidth / targetAspectRatio;
 
-    if (!isMobile) {
-      // Desktop: Cap at original size
+      // If height is too tall, scale based on height instead
+      if (canvasHeight > screenHeight) {
+        canvasHeight = screenHeight;
+        canvasWidth = screenHeight * targetAspectRatio;
+      }
+
+      // Cap at original size
       canvasWidth = Math.min(canvasWidth, CANVAS_WIDTH);
       canvasHeight = Math.min(canvasHeight, CANVAS_HEIGHT);
       console.log(`💻 DESKTOP MODE - Canvas: ${Math.round(canvasWidth)}x${Math.round(canvasHeight)}`);
-    } else {
-      console.log(`📱 MOBILE MODE - Aspect ratio maintained: ${Math.round(canvasWidth)}x${Math.round(canvasHeight)}`);
     }
 
     console.log(`📱 Screen size: ${screenWidth}x${screenHeight}, Aspect ratio: ${targetAspectRatio.toFixed(2)}`);

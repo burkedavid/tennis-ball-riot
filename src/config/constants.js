@@ -68,7 +68,7 @@ export const ENTITIES = {
     height: 140,
     x: 1000,                         // Right side of stage
     y: 360,                          // Standing on stage floor
-    color: 0xff6699,
+    color: 0x9933FF,                 // Purple (was pink 0xff6699)
   },
   singer: {
     width: 80,
