@@ -31,7 +31,7 @@ export const LEVELS = [
     crowdBumpFrequency: 1.0,
     crowdBumpStrength: 0.9,
     obstacles: [
-      { type: 'stage_monitor', x: 500, y: 270 }  // One stage monitor center-ish (portrait layout)
+      { type: 'stage_monitor', x: 500, y: 390 }  // MOVED DOWN with stage (was 270)
     ],
     effects: [],
     tutorial: false,
@@ -48,8 +48,8 @@ export const LEVELS = [
     crowdBumpFrequency: 0.9,
     crowdBumpStrength: 1.0,
     obstacles: [
-      { type: 'stage_monitor', x: 500, y: 270 },  // Portrait layout
-      { type: 'amp_stack', x: 270, y: 250 }  // Amp stack on left
+      { type: 'stage_monitor', x: 500, y: 390 },  // MOVED DOWN (was 270)
+      { type: 'amp_stack', x: 270, y: 370 }  // MOVED DOWN (was 250)
     ],
     effects: ['fog'],
     tutorial: false,
@@ -66,9 +66,9 @@ export const LEVELS = [
     crowdBumpFrequency: 0.8,
     crowdBumpStrength: 1.2,
     obstacles: [
-      { type: 'stage_monitor', x: 500, y: 270 },  // Portrait layout
-      { type: 'amp_stack', x: 230, y: 250 },
-      { type: 'spinning_light', x: 130, y: 180, config: { color: 0xFF00FF, spinSpeed: 3 } }
+      { type: 'stage_monitor', x: 500, y: 390 },  // MOVED DOWN (was 270)
+      { type: 'amp_stack', x: 230, y: 370 },  // MOVED DOWN (was 250)
+      { type: 'spinning_light', x: 130, y: 300, config: { color: 0xFF00FF, spinSpeed: 3 } }  // MOVED DOWN (was 180)
     ],
     effects: ['fog', 'lights'],
     tutorial: false,
@@ -85,11 +85,11 @@ export const LEVELS = [
     crowdBumpFrequency: 0.7,
     crowdBumpStrength: 1.4,
     obstacles: [
-      { type: 'stage_monitor', x: 470, y: 270 },  // Portrait layout
-      { type: 'stage_monitor', x: 570, y: 270 },
-      { type: 'amp_stack', x: 230, y: 250 },
-      { type: 'spinning_light', x: 130, y: 180, config: { color: 0xFF00FF, spinSpeed: 4 } },
-      { type: 'spinning_light', x: 700, y: 180, config: { color: 0x00FFFF, spinSpeed: 3 } }
+      { type: 'stage_monitor', x: 470, y: 390 },  // MOVED DOWN (was 270)
+      { type: 'stage_monitor', x: 570, y: 390 },  // MOVED DOWN (was 270)
+      { type: 'amp_stack', x: 230, y: 370 },  // MOVED DOWN (was 250)
+      { type: 'spinning_light', x: 130, y: 300, config: { color: 0xFF00FF, spinSpeed: 4 } },  // MOVED DOWN (was 180)
+      { type: 'spinning_light', x: 700, y: 300, config: { color: 0x00FFFF, spinSpeed: 3 } }  // MOVED DOWN (was 180)
     ],
     effects: ['fog', 'lights', 'strobe'],
     tutorial: false,

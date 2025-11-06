@@ -50,7 +50,7 @@ export const SCORING = {
 // Stage: 0-300, Crowd: 700-1200, YOU: 1000 with pull-down space to 1200
 export const ENTITIES = {
   ball: {
-    radius: 15,
+    radius: 22,                      // BIGGER for better visibility (was 15)
     color: 0x9FCD2A, // Tennis ball green
     startX: CANVAS_WIDTH / 2,        // Center horizontally (400)
     startY: 1000,                    // Near bottom - LOTS of room to pull down to 1200!
@@ -59,7 +59,7 @@ export const ENTITIES = {
     width: 90,                       // BIGGER glass
     height: 120,                     // TALLER glass
     x: 600,                          // Right side of stage (on drum kit)
-    y: 180,                          // Top area - on stage, above drums
+    y: 300,                          // MOVED DOWN - below HUD (was 180)
     color: 0x88ccff,
     targetZoneRadius: 70,            // BIGGER target zone
   },
@@ -67,7 +67,7 @@ export const ENTITIES = {
     width: 100,
     height: 140,
     x: 600,                          // Right side of stage
-    y: 230,                          // Standing on stage (top area)
+    y: 350,                          // MOVED DOWN - below HUD (was 230)
     color: 0x9933FF,                 // Purple
   },
   singer: {
@@ -75,26 +75,26 @@ export const ENTITIES = {
     height: 140,
     minX: 150,                       // Moves LEFT-RIGHT across stage
     maxX: 650,
-    y: 230,                          // Standing on stage (top area)
+    y: 350,                          // MOVED DOWN - below HUD (was 230)
     color: 0xff9933,
     baseSpeed: 3,                    // Horizontal movement
   },
   guitarist: {
     x: 150,                          // Far left of stage
-    y: 230,
+    y: 350,                          // MOVED DOWN - below HUD (was 230)
     color: 0x6633FF,
   },
   bassist: {
     x: 400,                          // Center of stage
-    y: 230,
+    y: 350,                          // MOVED DOWN - below HUD (was 230)
     color: 0xFF3366,
   },
   stage: {
-    y: 300,                          // Horizontal stage floor line (top area)
+    y: 420,                          // MOVED DOWN - stage floor below HUD (was 300)
     height: 5,                       // Thin floor line
     color: 0x444444,
-    backdropY: 0,                    // Stage backdrop top
-    backdropHeight: 300,             // Backdrop area (0-300)
+    backdropY: 120,                  // MOVED DOWN - start below HUD (was 0)
+    backdropHeight: 300,             // Backdrop area (120-420)
     backdropColor: 0x1a0a2e,         // Dark purple stage backdrop
   },
   audience: {
