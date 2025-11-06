@@ -716,12 +716,6 @@ export class Game {
       this.readyBallGraphics.visible = false;
     }
 
-    // Hide drag hint after first throw
-    const dragHint = document.getElementById('drag-hint');
-    if (dragHint) {
-      dragHint.classList.remove('visible');
-    }
-
     // Create ball
     this.activeBall = new Ball(
       this.physics,
