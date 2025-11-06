@@ -291,17 +291,20 @@ export class Game {
     // Create stage floor
     this.createStage();
 
-    // Create entities
-    this.glass = new Glass(this.physics, levelConfig.glassSize);
-    this.glass.getGraphics().forEach(g => this.gameContainer.addChild(g));
-
+    // Create entities (ORDER MATTERS - later items draw on top!)
+    // Drummer FIRST (background)
     this.drummer = new Drummer();
     this.gameContainer.addChild(this.drummer.getGraphics());
 
+    // Singer
     this.singer = new Singer(this.physics);
     this.singer.setAvailablePatterns(levelConfig.singerPatterns);
     this.singer.setSpeedMultiplier(levelConfig.singerSpeed);
     this.gameContainer.addChild(this.singer.getGraphics());
+
+    // Glass LAST so it's on top and VISIBLE!
+    this.glass = new Glass(this.physics, levelConfig.glassSize);
+    this.glass.getGraphics().forEach(g => this.gameContainer.addChild(g));
 
     // Create full band
     this.guitarist = new BandMember(
@@ -541,8 +544,8 @@ export class Game {
   createAudience() {
     const graphics = new PIXI.Graphics();
 
-    // Darker background fill (crowd area) - very dark
-    graphics.beginFill(0x050505);
+    // Crowd area background - LIGHTER for visibility!
+    graphics.beginFill(0x1a1a1a);  // Lighter gray instead of black
     graphics.drawRect(
       0,
       ENTITIES.audience.startY,
@@ -551,7 +554,7 @@ export class Game {
     );
     graphics.endFill();
 
-    // Crowd silhouettes (large heads in foreground) - VISIBLE!
+    // Crowd silhouettes (large heads in foreground) - MUCH MORE VISIBLE!
     const rows = ENTITIES.audience.headRows;
     const cols = ENTITIES.audience.headCols;
     const spacing = CANVAS_WIDTH / cols;
@@ -579,8 +582,9 @@ export class Game {
         const sizeMult = 1 + (row * 0.4);
         const headSize = 25 * sizeMult;
 
-        // DARKER silhouette (head + shoulders) - pure black against dark gray
-        graphics.beginFill(0x000000, 0.95);
+        // VISIBLE silhouettes - dark gray with variety
+        const crowdShade = 0x333333 + Math.floor(Math.random() * 0x222222); // Varied grays
+        graphics.beginFill(crowdShade, 0.95);
 
         // Head
         graphics.drawCircle(x, y, headSize);
@@ -590,8 +594,8 @@ export class Game {
 
         graphics.endFill();
 
-        // Edge highlight to make silhouettes POP
-        graphics.lineStyle(1, 0x222222, 0.5);
+        // Brighter edge highlight to make silhouettes POP
+        graphics.lineStyle(2, 0x555555, 0.7);  // Much brighter outline
         graphics.drawCircle(x - 2, y - 2, headSize);
         graphics.lineStyle(0);
 
@@ -710,6 +714,12 @@ export class Game {
     // Hide ready ball indicator
     if (this.readyBallGraphics) {
       this.readyBallGraphics.visible = false;
+    }
+
+    // Hide drag hint after first throw
+    const dragHint = document.getElementById('drag-hint');
+    if (dragHint) {
+      dragHint.classList.remove('visible');
     }
 
     // Create ball

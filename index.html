@@ -290,16 +290,17 @@
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.85);
+      background: rgba(0, 0, 0, 0.9);
       padding: 20px 30px;
       border: 3px solid #ff00ff;
       border-radius: 10px;
-      box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+      box-shadow: 0 0 30px rgba(255, 0, 255, 0.8);
       text-align: center;
       transition: opacity 0.3s ease;
       max-width: 90%;
       opacity: 0; /* Start hidden */
       pointer-events: none;
+      z-index: 300; /* Above everything including modals */
     }
 
     .drag-instructions.visible {
@@ -476,6 +477,17 @@
         </div>
         <div class="control-row">
           <button class="btn-throw" id="btn-throw">🎵 Throw Ball 🎵</button>
+        </div>
+      </div>
+
+      <!-- Drag to Throw Instructions (Visible on game start) -->
+      <div class="drag-instructions visible" id="drag-hint">
+        <div class="instruction-title">🎯 Drag to Throw!</div>
+        <div class="instruction-text">
+          <p><strong>👆 Tap & Hold</strong> the ball</p>
+          <p><strong>⬇️ Pull Down</strong> (away from target)</p>
+          <p><strong>🚀 Release</strong> to launch!</p>
+          <p style="font-size: 0.85em; color: #aaa; margin-top: 10px;">💡 Pull farther = More power</p>
         </div>
       </div>
 
