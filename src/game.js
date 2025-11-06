@@ -406,14 +406,16 @@ export class Game {
           graphics.endFill();
         }
 
-        // Phone lights (some people recording)
+        // Phone lights (some people recording) - use own position
         if (Math.random() < 0.15) {
+          const phoneX = x + headSize;
+          const phoneY = y - headSize;
           graphics.beginFill(0xFFFFFF, 0.8);
-          graphics.drawRect(armX || x + headSize, armY + 30 || y - headSize, 8, 12);
+          graphics.drawRect(phoneX, phoneY, 8, 12);
           graphics.endFill();
           // Phone glow
           graphics.beginFill(0x88CCFF, 0.3);
-          graphics.drawCircle(armX || x + headSize, armY + 36 || y - headSize + 6, 15);
+          graphics.drawCircle(phoneX + 4, phoneY + 6, 15);
           graphics.endFill();
         }
       }
