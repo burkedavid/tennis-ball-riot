@@ -95,16 +95,32 @@ export class Game {
     // Check if mobile (width <= 768px)
     const isMobile = screenWidth <= 768;
 
+    // Check if portrait (height > width)
+    const isPortrait = screenHeight > screenWidth;
+
     let canvasWidth, canvasHeight;
 
-    // ALWAYS maintain aspect ratio for proper game world display
-    canvasWidth = screenWidth;
-    canvasHeight = screenWidth / targetAspectRatio;
-
-    // If height is too tall, scale based on height instead
-    if (canvasHeight > screenHeight) {
+    // Portrait mobile: Scale based on HEIGHT to fill vertical space
+    if (isMobile && isPortrait) {
+      console.log('📱 PORTRAIT MODE - Scaling based on HEIGHT');
       canvasHeight = screenHeight;
       canvasWidth = screenHeight * targetAspectRatio;
+
+      // If width exceeds screen, scale back down
+      if (canvasWidth > screenWidth) {
+        canvasWidth = screenWidth;
+        canvasHeight = screenWidth / targetAspectRatio;
+      }
+    } else {
+      // Landscape or desktop: Scale based on WIDTH (existing behavior)
+      canvasWidth = screenWidth;
+      canvasHeight = screenWidth / targetAspectRatio;
+
+      // If height is too tall, scale based on height instead
+      if (canvasHeight > screenHeight) {
+        canvasHeight = screenHeight;
+        canvasWidth = screenHeight * targetAspectRatio;
+      }
     }
 
     // Desktop: Cap at original size
@@ -113,7 +129,7 @@ export class Game {
       canvasHeight = Math.min(canvasHeight, CANVAS_HEIGHT);
     }
 
-    console.log(`${isMobile ? '📱 MOBILE' : '💻 DESKTOP'} - Canvas: ${Math.round(canvasWidth)}x${Math.round(canvasHeight)}, Screen: ${screenWidth}x${screenHeight}`);
+    console.log(`${isMobile ? '📱 MOBILE' : '💻 DESKTOP'} ${isPortrait ? '🔄 PORTRAIT' : '↔️ LANDSCAPE'} - Canvas: ${Math.round(canvasWidth)}x${Math.round(canvasHeight)}, Screen: ${screenWidth}x${screenHeight}`);
 
     console.log(`📱 Screen size: ${screenWidth}x${screenHeight}, Aspect ratio: ${targetAspectRatio.toFixed(2)}`);
 
