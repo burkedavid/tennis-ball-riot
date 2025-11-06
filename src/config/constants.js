@@ -59,7 +59,7 @@ export const ENTITIES = {
     width: 90,                       // BIGGER glass
     height: 120,                     // TALLER glass
     x: 600,                          // Right side of stage (on drum kit)
-    y: 300,                          // MOVED DOWN - below HUD (was 180)
+    y: 360,                          // MOVED LOWER - stage lights below HUD (was 300)
     color: 0x88ccff,
     targetZoneRadius: 70,            // BIGGER target zone
   },
@@ -67,7 +67,7 @@ export const ENTITIES = {
     width: 100,
     height: 140,
     x: 600,                          // Right side of stage
-    y: 350,                          // MOVED DOWN - below HUD (was 230)
+    y: 410,                          // MOVED LOWER (was 350)
     color: 0x9933FF,                 // Purple
   },
   singer: {
@@ -75,26 +75,26 @@ export const ENTITIES = {
     height: 140,
     minX: 150,                       // Moves LEFT-RIGHT across stage
     maxX: 650,
-    y: 350,                          // MOVED DOWN - below HUD (was 230)
+    y: 410,                          // MOVED LOWER (was 350)
     color: 0xff9933,
     baseSpeed: 3,                    // Horizontal movement
   },
   guitarist: {
     x: 150,                          // Far left of stage
-    y: 350,                          // MOVED DOWN - below HUD (was 230)
+    y: 410,                          // MOVED LOWER (was 350)
     color: 0x6633FF,
   },
   bassist: {
     x: 400,                          // Center of stage
-    y: 350,                          // MOVED DOWN - below HUD (was 230)
+    y: 410,                          // MOVED LOWER (was 350)
     color: 0xFF3366,
   },
   stage: {
-    y: 420,                          // MOVED DOWN - stage floor below HUD (was 300)
+    y: 480,                          // MOVED LOWER - stage floor (was 420)
     height: 5,                       // Thin floor line
     color: 0x444444,
-    backdropY: 120,                  // MOVED DOWN - start below HUD (was 0)
-    backdropHeight: 300,             // Backdrop area (120-420)
+    backdropY: 180,                  // MOVED LOWER - backdrop well below HUD (was 120)
+    backdropHeight: 300,             // Backdrop area (180-480)
     backdropColor: 0x1a0a2e,         // Dark purple stage backdrop
   },
   audience: {
