@@ -3,9 +3,9 @@
  * Central location for all game constants, physics settings, and configuration values
  */
 
-// Canvas and Rendering
-export const CANVAS_WIDTH = 1200;
-export const CANVAS_HEIGHT = 800;
+// Canvas and Rendering - PORTRAIT MODE for mobile-first design
+export const CANVAS_WIDTH = 800;
+export const CANVAS_HEIGHT = 1200;
 export const TARGET_FPS = 60;
 
 // Physics Configuration
@@ -45,64 +45,64 @@ export const SCORING = {
 };
 
 // Entity Sizes and Positions
-// SIDE VIEW PERSPECTIVE - Like watching a concert from the middle of the crowd
-// Stage backdrop at top (0-400), stage floor at y=400
-// Crowd surrounds you (450-800), YOU in the middle at y=550 - room to pull back!
+// PORTRAIT VIEW - Stage at TOP, YOU at BOTTOM
+// Throw upward from bottom to hit glass at top!
+// Stage: 0-300, Crowd: 700-1200, YOU: 1000 with pull-down space to 1200
 export const ENTITIES = {
   ball: {
     radius: 15,
     color: 0x9FCD2A, // Tennis ball green
-    startX: CANVAS_WIDTH / 2,        // Center (where YOU stand IN THE CROWD)
-    startY: 550,                     // MIDDLE of crowd - LOTS of room to pull down! (was 750)
+    startX: CANVAS_WIDTH / 2,        // Center horizontally (400)
+    startY: 1000,                    // Near bottom - LOTS of room to pull down to 1200!
   },
   glass: {
-    width: 90,                       // BIGGER glass (was 60)
-    height: 120,                     // TALLER glass (was 80)
-    x: 1000,                         // Right side of stage (on drum kit)
-    y: 310,                          // On stage, above drums
+    width: 90,                       // BIGGER glass
+    height: 120,                     // TALLER glass
+    x: 600,                          // Right side of stage (on drum kit)
+    y: 180,                          // Top area - on stage, above drums
     color: 0x88ccff,
-    targetZoneRadius: 70,            // BIGGER target zone (was 50)
+    targetZoneRadius: 70,            // BIGGER target zone
   },
   drummer: {
     width: 100,
     height: 140,
-    x: 1000,                         // Right side of stage
-    y: 360,                          // Standing on stage floor
-    color: 0x9933FF,                 // Purple (was pink 0xff6699)
+    x: 600,                          // Right side of stage
+    y: 230,                          // Standing on stage (top area)
+    color: 0x9933FF,                 // Purple
   },
   singer: {
     width: 80,
     height: 140,
-    minX: 300,                       // Moves LEFT-RIGHT across stage
-    maxX: 850,
-    y: 360,                          // Standing on stage floor
+    minX: 150,                       // Moves LEFT-RIGHT across stage
+    maxX: 650,
+    y: 230,                          // Standing on stage (top area)
     color: 0xff9933,
-    baseSpeed: 3,                    // Faster horizontal movement
+    baseSpeed: 3,                    // Horizontal movement
   },
   guitarist: {
-    x: 250,                          // Far left of stage
-    y: 360,
+    x: 150,                          // Far left of stage
+    y: 230,
     color: 0x6633FF,
   },
   bassist: {
-    x: 500,                          // Left-center of stage
-    y: 360,
+    x: 400,                          // Center of stage
+    y: 230,
     color: 0xFF3366,
   },
   stage: {
-    y: 400,                          // Horizontal stage floor line
+    y: 300,                          // Horizontal stage floor line (top area)
     height: 5,                       // Thin floor line
     color: 0x444444,
     backdropY: 0,                    // Stage backdrop top
-    backdropHeight: 400,             // Backdrop area (0-400)
+    backdropHeight: 300,             // Backdrop area (0-300)
     backdropColor: 0x1a0a2e,         // Dark purple stage backdrop
   },
   audience: {
-    startY: 450,                     // Crowd starts below stage
-    height: 350,                     // All the way to bottom (was 250)
+    startY: 700,                     // Crowd in bottom area
+    height: 500,                     // Bottom half of screen
     color: 0x000000,
-    headRows: 5,                     // MORE rows (was 3) - you're IN the crowd!
-    headCols: 25,                    // Columns across
+    headRows: 6,                     // Rows of crowd
+    headCols: 16,                    // Fewer columns (narrower width)
   }
 };
 

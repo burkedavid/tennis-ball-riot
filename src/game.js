@@ -88,49 +88,39 @@ export class Game {
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
 
-    // Original aspect ratio (1200x800 = 3:2 = 1.5)
+    // Portrait aspect ratio (800x1200 = 2:3 = 0.667)
     const targetAspectRatio = CANVAS_WIDTH / CANVAS_HEIGHT;
 
-    // Check if mobile (width <= 768px)
-    const isMobile = screenWidth <= 768;
-
-    // Check if portrait (height > width)
+    // Check if portrait (height > width) - PRIMARY MODE
     const isPortrait = screenHeight > screenWidth;
 
     let canvasWidth, canvasHeight;
 
-    // Portrait mobile: Scale based on HEIGHT to fill vertical space
-    if (isMobile && isPortrait) {
-      console.log('📱 PORTRAIT MODE - Scaling based on HEIGHT');
+    // PORTRAIT MODE (primary design) - Fill screen height
+    if (isPortrait) {
+      console.log('📱 PORTRAIT MODE - Filling screen height');
       canvasHeight = screenHeight;
       canvasWidth = screenHeight * targetAspectRatio;
 
-      // If width exceeds screen, scale back down
+      // If width exceeds screen, scale to fit width instead
       if (canvasWidth > screenWidth) {
         canvasWidth = screenWidth;
         canvasHeight = screenWidth / targetAspectRatio;
       }
     } else {
-      // Landscape or desktop: Scale based on WIDTH (existing behavior)
+      // LANDSCAPE MODE - Fill screen width
+      console.log('↔️ LANDSCAPE MODE - Filling screen width');
       canvasWidth = screenWidth;
       canvasHeight = screenWidth / targetAspectRatio;
 
-      // If height is too tall, scale based on height instead
+      // If height exceeds screen, scale to fit height instead
       if (canvasHeight > screenHeight) {
         canvasHeight = screenHeight;
         canvasWidth = screenHeight * targetAspectRatio;
       }
     }
 
-    // Desktop: Cap at original size
-    if (!isMobile) {
-      canvasWidth = Math.min(canvasWidth, CANVAS_WIDTH);
-      canvasHeight = Math.min(canvasHeight, CANVAS_HEIGHT);
-    }
-
-    console.log(`${isMobile ? '📱 MOBILE' : '💻 DESKTOP'} ${isPortrait ? '🔄 PORTRAIT' : '↔️ LANDSCAPE'} - Canvas: ${Math.round(canvasWidth)}x${Math.round(canvasHeight)}, Screen: ${screenWidth}x${screenHeight}`);
-
-    console.log(`📱 Screen size: ${screenWidth}x${screenHeight}, Aspect ratio: ${targetAspectRatio.toFixed(2)}`);
+    console.log(`${isPortrait ? '🔄 PORTRAIT' : '↔️ LANDSCAPE'} - Canvas: ${Math.round(canvasWidth)}x${Math.round(canvasHeight)}, Screen: ${screenWidth}x${screenHeight}, Ratio: ${targetAspectRatio.toFixed(3)}`);
 
     return {
       width: Math.round(canvasWidth),
