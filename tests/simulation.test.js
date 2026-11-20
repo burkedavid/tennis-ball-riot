@@ -12,18 +12,29 @@ function finish(s, delta = tick) {
   return s.lastShot;
 }
 
-// A reproducible player strategy: loft the ball while the singer moves left
-// across the right side of the stage. Only public controls advance the run.
+// Walk a complete set using visible stage cues and real launch controls.
+// The dash, leftward return and airborne crossings each open different routes.
+const playbook = [
+  [60, 70],
+  [64, 74, 'pace', -1, .5],
+  [69, 84, 'pace', -1, .5],
+  [57, 68, 'run', 1, .5],
+  [66, 78, 'run', -1, 1.5],
+  [72, 93, 'anticipate', -1, 1.86],
+  [61, 71, ['jump', 'run'], 1, .5],
+  [68, 82, 'jump', 1, -.5],
+  [58, 69, 'run', 1, .5],
+  [65, 76, ['pace', 'run'], 1, .5],
+];
 function loft(s) {
-  let previousX = -4;
+  const [angle, power, action, direction, x] = playbook[s.levelIndex];
   for (let wait = 0; s.levelIndex > 0; wait++) {
-    if (s.singer.x > .75 && s.singer.x < .88 && s.singer.x < previousX &&
-        !s.surge.active && !s.surge.warning) break;
-    assert.ok(wait < 1800, 'a playable window opens within 15 seconds');
-    previousX = s.singer.x;
+    if (action.includes(s.singer.action) && s.singer.direction === direction && Math.abs(s.singer.x - x) < .18 &&
+        !s.surge.active) break;
+    assert.ok(wait < 3600, s.level.name + ': timed shot available within 30 seconds');
     s.update(tick);
   }
-  assert.equal(s.launch(69, 84), true);
+  assert.equal(s.launch(angle, power), true);
   return finish(s);
 }
 
@@ -131,7 +142,8 @@ test('bank, direct, lip and singer collisions produce distinct outcomes', () => 
   s.launch(30, 30); shot = finish(s);
   assert.ok(shot.singer); assert.ok(e.includes('singer'));
   assert.equal(shot.points, 0);
-  s.loadLevel(9); s.launch(70, 95); shot = finish(s);
+  s.loadLevel(9); for (let i = 0; i < 60; i++) s.update(tick);
+  s.launch(54, 100); shot = finish(s);
   assert.ok(shot.made); assert.equal(shot.banks, 2); assert.equal(shot.bonus, 100);
 });
 
@@ -161,4 +173,67 @@ test('underside crossing and an outside wall do not count as entry', () => {
   }
   const s = new Simulation();
   assert.ok(s.glass.radius > BALL_RADIUS);
+});
+
+test('miss feedback diagnoses the first arc and gives a repeatable correction', () => {
+  const s = new Simulation();
+  for (const [level, angle, power, reason, correction] of [
+    [0, 18, 5, 'low', /higher/],
+    [0, 42, 67.5, 'short', /power/],
+    [0, 36, 97.5, 'long', /less power/],
+    [0, 32, 97.5, 'rim', /rim/],
+    [1, 30, 30, 'blocked', /Singer/],
+    [1, 18, 5, 'blocked', /Monitor/],
+  ]) {
+    s.loadLevel(level);
+    s.launch(angle, power);
+    const miss = finish(s);
+    assert.equal(miss.made, false);
+    assert.equal(miss.reason, reason);
+    assert.match(miss.coaching, correction);
+  }
+});
+
+test('late set cues precede their rushes and jumps, and retry repeats the choreography', () => {
+  const s = new Simulation();
+  function watchFinale() {
+    const transitions = [];
+    let maxHeight = 0, maxCrouch = 0;
+    for (let i = 0; i < 120 * 13; i++) {
+      const { action, cue, y, crouch, direction } = s.singer;
+      if (action !== transitions.at(-1)?.action) transitions.push({ action, cue, direction });
+      maxHeight = Math.max(maxHeight, y); maxCrouch = Math.max(maxCrouch, crouch);
+      s.update(tick);
+    }
+    assert.ok(maxHeight > .65 && maxCrouch > .9);
+    return transitions;
+  }
+  s.loadLevel(9);
+  const moves = watchFinale();
+  assert.ok(moves.some(m => m.cue.includes('delayed')));
+  assert.ok(moves.some(m => m.action === 'pace'));
+  for (let i = 0; i < moves.length; i++) {
+    if (['run', 'jump'].includes(moves[i].action)) {
+      assert.equal(moves[i - 1].action, 'anticipate');
+      assert.equal(moves[i - 1].direction, moves[i].direction);
+      assert.ok(moves[i - 1].cue.length);
+    }
+  }
+  s.retry();
+  assert.deepEqual(watchFinale(), moves);
+});
+
+test('dead floor rebound gets a visible beat, while an energetic bank can still score', () => {
+  const s = new Simulation();
+  s.start(); s.launch(18, 5);
+  while (!s.ball.banks) s.update(tick);
+  const firstBounce = s.ball.age;
+  while (s.phase === 'flight') s.update(tick);
+  assert.equal(s.lastShot.reason, 'low');
+  assert.ok(s.ball.age >= firstBounce + .19 && s.ball.age <= firstBounce + .22);
+  assert.ok(s.ball.age < .7);
+  s.retry(); s.launch(76, 65);
+  while (!s.ball.banks) s.update(tick);
+  assert.ok(s.ball.deadSince === null);
+  assert.ok(finish(s).made);
 });

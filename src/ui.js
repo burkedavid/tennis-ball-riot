@@ -25,6 +25,10 @@ const button = (name, action, primary = false) =>
   '<button class="' + (primary ? 'primary' : 'secondary') + '" data-action="' + action + '">' + name + '</button>';
 const buttons = (...items) => '<div class="panel-actions">' + items.join('') + '</div>';
 const stats = (rows) => '<dl class="stats">' + rows.map(([name,value]) => '<dt>' + name + '</dt><dd>' + value + '</dd>').join('') + '</dl>';
+const shotName = shot => shot.banks === 0 ? 'Clean shot!' : shot.banks === 1 ? 'Bank shot!' : 'Trick shot!';
+const shotMath = shot => '100 × ' + (shot.base / 100) + ' + ' + shot.bonus + (shot.banks ? ' bank bonus' : ' clean bonus');
+const missNames = {short:'A little short',long:'Over the pint',low:'Too low',blocked:'Blocked!',rim:'Rim out!'};
+const nextMultiplier = combo => [1, 1.5, 2, 3][Math.min(combo,3)];
 
 export function createUI(actions) {
   const settings = readSettings();
@@ -35,6 +39,7 @@ export function createUI(actions) {
   let feedbackTime = 0, prevTime = performance.now(), firstShot = true;
   let best = Math.max(0, Number(storage.read('best',0)) || 0);
   let kbAim = false, renderValues = '';
+  let nextShotHint = '';
   let wasReady = false;
   const describeAim = () => Math.round(angle) + '°  ·  ' + Math.round(power) + '% power';
   const controllable = () => sim?.phase === 'ready' && !panel;
@@ -66,6 +71,7 @@ export function createUI(actions) {
     actions.cancelAim?.();
     kbAim = false;
     hidden('aim-readout',true);
+    byId('drag-guide').setAttribute('hidden','');
   }
   function closePanel(restore=true) {
     panel=''; back='';
@@ -122,7 +128,11 @@ export function createUI(actions) {
     if(won) rows.push(['Accuracy',Math.round(sim.accuracy)+'%'],['Bank shots',runStats.banks]);
     const next = failed?'Retry level':won?'Play again':'Continue';
     const intro = won?'Ten songs. The drummer raises his glass.':failed?level.name:'Up next · '+LEVELS[levelIndex+1].name;
-    showPanel('result',title,'<p>'+intro+'</p>'+stats(rows)+buttons(button(next,failed?'retry':won?'start':'next',true),button('Title screen','menu')),false);
+    const shot = sim.lastShot;
+    const review = shot?.made ? '<details class="shot-review"><summary>Last shot · +'+shot.points+'</summary><p>'+shotName(shot)+' '+shotMath(shot)+'</p></details>' : '';
+    const note = failed && nextShotHint ? '<p class="retry-hint"></p>' : '';
+    showPanel('result',title,'<p>'+intro+'</p>'+stats(rows)+review+note+buttons(button(next,failed?'retry':won?'start':'next',true),button('Title screen','menu')),false);
+    if(note) byId('panel-content').querySelector('.retry-hint').textContent=nextShotHint;
     label('announce',title+'. Score '+score+'. '+intro+'.');
   }
   dialog.addEventListener('cancel',e=>{e.preventDefault();closeCurrent();});
@@ -152,15 +162,30 @@ export function createUI(actions) {
   byId('title-mute').onclick=()=>{settings.muted=!settings.muted;applySettings();actions.unlockAudio?.();};
   byId('pause').onclick=showPause;
 
+  function paintGesture(x,y,valid) {
+    // The tip marks the effective launch vector. The dashed tail shows any drag
+    // beyond maximum power, or direction outside the supported launch angles.
+    const span=valid ? power*1.2*gesture.scale : 0;
+    const rad=angle*Math.PI/180;
+    const tx=gesture.x+span*Math.cos(rad), ty=gesture.y-span*Math.sin(rad);
+    const line=byId('drag-vector'),tail=byId('drag-tail');
+    line.setAttribute('x2',tx);line.setAttribute('y2',ty);
+    tail.setAttribute('x1',tx);tail.setAttribute('y1',ty);
+    tail.setAttribute('x2',x);tail.setAttribute('y2',y);
+    byId('drag-tip').setAttribute('transform','translate('+tx+' '+ty+') rotate('+(-angle)+')');
+    byId('drag-charge').setAttribute('stroke-dashoffset',String(valid ? 100-power : 100));
+    byId('drag-tip').style.visibility=valid?'visible':'hidden';
+  }
   function touchAim(x,y) {
     if(!gesture) return false;
     const dx=(x-gesture.x)/gesture.scale,dy=(gesture.y-y)/gesture.scale;
     const distance=Math.hypot(dx,dy);
     if(dy<=0 || distance<10) {
-      gesture.valid=false; actions.cancelAim?.(); hidden('aim-readout',true); return false;
+      gesture.valid=false; actions.cancelAim?.(); hidden('aim-readout',true);paintGesture(x,y,false);return false;
     }
     gesture.valid=true;
     newAim(Math.atan2(dy,dx)*180/Math.PI,distance/120*100);
+    paintGesture(x,y,true);
     hidden('aim-readout',false); hidden('teaching',true);
     return true;
   }
@@ -168,6 +193,10 @@ export function createUI(actions) {
     if(!controllable() || settings.controls!=='flick' || gesture || !e.isPrimary || e.button!==0) return;
     e.preventDefault(); area.focus({preventScroll:true}); actions.unlockAudio?.();
     gesture={id:e.pointerId,x:e.clientX,y:e.clientY,scale:clamp(innerWidth/360,.86,1.35),valid:false};
+    byId('drag-anchor').setAttribute('transform','translate('+gesture.x+' '+gesture.y+')');
+    byId('drag-vector').setAttribute('x1',gesture.x);byId('drag-vector').setAttribute('y1',gesture.y);
+    paintGesture(gesture.x,gesture.y,false);
+    byId('drag-guide').removeAttribute('hidden');
     area.setPointerCapture(e.pointerId);
   });
   area.addEventListener('pointermove',e=>{if(e.pointerId===gesture?.id) touchAim(e.clientX,e.clientY);});
@@ -204,16 +233,31 @@ export function createUI(actions) {
   document.addEventListener('visibilitychange',()=>{if(document.hidden) interrupt();});
   window.addEventListener('blur',interrupt);
   window.addEventListener('resize',()=>{if(gesture) cancelGesture();});
-  function flash(text,seconds=1.2) {
-    label('feedback',text); hidden('feedback',false); feedbackTime=seconds;
+  function flash(kind,title,note='',points=0,seconds=1.5) {
+    const feedback=byId('feedback');
+    feedback.dataset.kind=kind;
+    label('feedback-name',title);
+    label('feedback-points',points?'+'+format(points):''); hidden('feedback-points',!points);
+    label('feedback-note',note);hidden('feedback-note',!note);
+    hidden('feedback',false); feedbackTime=seconds;
   }
   function event(type,detail={}) {
     if(typeof type==='object') {detail=type;type=detail.type;}
-    if(type==='make') flash((detail.banks===0?'Clean shot':detail.banks===1?'Bank shot':'Double bank')+' · '+detail.base+' + '+detail.bonus);
-    if(type==='miss') flash(detail.rim?'Rim out!':'Missed the pint');
-    if(type==='singer') flash('Singer deflection',.65);
-    if(type==='rim') flash('On the rim!',.45);
-    if(type==='launch') {firstShot=false;hidden('teaching',true);}
+    if(type==='make') {
+      nextShotHint='';
+      flash('make',shotName(detail),shotMath(detail),detail.points);
+    }
+    if(type==='miss') {
+      nextShotHint=detail.coaching||'';
+      label('coach',nextShotHint);
+      flash('miss',missNames[detail.reason] || (detail.rim?'Rim out!':'Missed the pint'),detail.priorCombo>1?detail.priorCombo+'-shot streak ended':'');
+    }
+    if(type==='singer') flash('contact','Singer deflection','',0,.55);
+    if(type==='rim') flash('contact','On the rim!','',0,.45);
+    if(type==='level' || type==='launch') {
+      nextShotHint=''; hidden('coach',true);hidden('feedback',true);feedbackTime=0;
+      if(type==='launch'){firstShot=false;hidden('teaching',true);}
+    }
   }
   function render(state) {
     sim=state;
@@ -239,17 +283,22 @@ export function createUI(actions) {
       renderValues=values;
       label('song-count','Song '+String(state.levelIndex+1).padStart(2,'0')+' / '+LEVELS.length);
       label('song',state.level.name);label('points',format(state.score));label('stock',state.remaining);label('target',state.makes+' / '+state.level.goal);
-      label('best-in-play','Best '+format(best)); label('streak',state.combo+' streak'); hidden('streak',state.combo<2);
+      label('best-in-play','Best '+format(best));
+      label('streak',state.combo+' in a row · next ×'+nextMultiplier(state.combo));
+      hidden('streak',state.combo<1 || state.makes>=state.level.goal);
       for(const id of ['throw','angle','power'])byId(id).disabled=phase!=='ready';
-      if(phase==='ready')label('announce',state.level.name+'. '+state.remaining+' balls left. '+state.makes+' of '+state.level.goal+' in the pint.');
+      if(phase==='ready')label('announce',state.level.name+'. '+state.remaining+' balls left. '+state.makes+' of '+state.level.goal+' in the pint. '+nextShotHint);
     }
     const aiming=settings.controls==='aim';
+    hidden('coach',!(nextShotHint && phase==='ready' && !gesture && !kbAim));
     hidden('aim-controls',!aiming);hidden('teaching',!(firstShot && !aiming && !kbAim && !gesture?.valid && phase==='ready'));
     hidden('aim-readout',!(phase==='ready' && !aiming && (kbAim || gesture?.valid)));
     if(state.surge){
       const {warning,active,direction}=state.surge;
-      hidden('surge',!(warning || active));
+      const singerCue=phase==='ready' && state.singer?.cue;
+      hidden('surge',!(warning || active || singerCue));
       if(warning||active)label('surge',(active?'Crowd bump ':'Crowd surge coming ')+(direction>0?'→':'←'));
+      else if(singerCue)label('surge',singerCue);
     }
     if(feedbackTime>0 && phase!=='paused'){feedbackTime-=dt;if(feedbackTime<=0)hidden('feedback',true);}
   }

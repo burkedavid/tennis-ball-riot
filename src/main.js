@@ -39,9 +39,9 @@ function frame(now) {
   // Preserve the elapsed fraction when limiting display refresh without double ticking physics.
   const dt = Math.min(.12,raw - elapsed);
   sim.update(dt);
-  audio.tick(dt,['ready','flight','settling'].includes(sim.phase),sim.makes + 1 >= sim.level.goal);
+  audio.tick(['ready','flight','settling'].includes(sim.phase),sim.combo>=2 || sim.makes+1>=sim.level.goal);
   ui.render(sim);
-  const songTime = audio.beat>0 && !ui.settings.muted ? audio.beat*.24 - audio.next : undefined;
+  const songTime = audio.band?.playing ? audio.band.clock : undefined;
   stage.draw(dt,songTime);
   if(sim.phase!=='paused')stage.observe(raw);
 }

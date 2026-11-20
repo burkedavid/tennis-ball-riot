@@ -54,12 +54,19 @@
         <button class="icon-button" id="pause" aria-label="Pause game"><svg class="ico"><use href="#i-pause"/></svg></button>
       </div>
       <div id="throw-area" tabindex="0" role="group" aria-label="Throwing area. Drag up and right toward the pint. Keyboard: arrows adjust aim and power, Space throws, Escape pauses."></div>
+      <svg id="drag-guide" aria-hidden="true" hidden>
+        <line id="drag-tail"/>
+        <line id="drag-vector"/>
+        <g id="drag-anchor"><circle class="anchor-pad" r="17"/><circle id="drag-charge" r="14" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100" transform="rotate(-90)"/><circle class="anchor-pin" r="3"/></g>
+        <path id="drag-tip" d="M0 0 -10 -5 -8 0 -10 5Z"/>
+      </svg>
       <div class="readouts">
         <div class="status-chip"><svg class="ico"><use href="#i-ball"/></svg><span><b id="stock">10</b> balls left</span></div>
         <div class="status-chip"><span><b id="target">0 / 1</b> in the pint</span></div>
       </div>
       <div class="lower">
         <div id="teaching" class="teaching"><span class="swipe" aria-hidden="true">↗</span><span><b>Drag up and right</b><small>Release to throw into the pint.</small><small class="keys">Arrow keys to aim · Space to throw</small></span></div>
+        <div id="coach" hidden></div>
         <div id="aim-controls" hidden>
           <label for="angle">Angle <output id="angle-out">60°</output></label><input type="range" id="angle" min="15" max="85" value="60">
           <label for="power">Power <output id="power-out">70%</output></label><input type="range" id="power" min="0" max="100" value="70">
@@ -67,7 +74,8 @@
         </div>
         <div id="aim-readout" hidden></div>
       </div>
-      <output id="surge" hidden></output><output id="feedback" aria-live="polite" hidden></output>
+      <output id="surge" hidden></output>
+      <div id="feedback" role="status" aria-live="polite" aria-atomic="true" hidden><b id="feedback-name"></b><strong id="feedback-points" hidden></strong><small id="feedback-note" hidden></small></div>
     </section>
   </main>
   <dialog id="panel" aria-labelledby="panel-title">

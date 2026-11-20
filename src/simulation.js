@@ -27,6 +27,72 @@ const WEDGE = Object.freeze({ x: -.72, y: .215, width: .68, height: .43, kind: '
 const AMP = Object.freeze({ x: 2.53, y: 1.18, width: .42, height: 2.36, kind: 'amp' });
 const freshStats = () => ({ makes: 0, throws: 0, banks: 0, bestCombo: 0 });
 
+// Each crossing is a four-beat phrase. Players can recognise the same move
+// from the singer's preparation even when its position in the song changes.
+const PHRASES = [
+  null, null, null,
+  ['run', 'pace'],
+  ['pace', 'run'],
+  ['run', 'run', 'pace', 'run'],
+  ['jump', 'pace', 'run', 'pace'],
+  ['jump', 'run', 'pace', 'jump'],
+  ['feint', 'jump', 'run', 'pace'],
+  ['run', 'jump', 'feint', 'jump', 'pace', 'run'],
+];
+const MOVES = {
+  pace: { prepare: 0, travel: .83, height: 0, cue: '' },
+  run: { prepare: .23, travel: .43, height: 0, cue: 'Singer winding up' },
+  jump: { prepare: .30, travel: .46, height: .72, cue: 'Singer crouching for a jump' },
+  feint: { prepare: .43, travel: .38, height: 0, cue: 'Watch the delayed run' },
+};
+
+function updateChoreography(singer, index, time) {
+  const beatsPerMinute = 99 + (index - 3) * 4;
+  const phrase = time * beatsPerMinute / 240;
+  const number = Math.floor(phrase), progress = phrase - number;
+  const sequence = PHRASES[index];
+  const kind = sequence[number % sequence.length], move = MOVES[kind];
+  const direction = number % 2 ? -1 : 1;
+  const t = clamp((progress - move.prepare) / move.travel, 0, 1);
+  const eased = t * t * (3 - 2 * t);
+  const position = direction > 0 ? eased : 1 - eased;
+  singer.direction = direction;
+  singer.x = -1.08 + 2.94 * position;
+  singer.y = move.height * 4 * t * (1 - t);
+  singer.action = progress < move.prepare ? 'anticipate' : t >= 1 ? 'rest' : kind === 'feint' ? 'run' : kind;
+  singer.cue = singer.action === 'anticipate' ? move.cue : '';
+  singer.crouch = 0;
+  if (singer.action === 'anticipate') {
+    const anticipation = progress / move.prepare;
+    // The false start has two dips. The feet and blocker stay planted until
+    // the second dip ends. A real jump takes off after a single deep crouch.
+    const dips = kind === 'feint' ? 2 : 1;
+    singer.crouch = Math.sin(anticipation * Math.PI * dips) ** 2;
+    singer.height -= singer.crouch * (kind === 'jump' ? .29 : .14);
+  }
+}
+
+function missFeedback(ball) {
+  if (ball.rimHit) {
+    let coaching = ball.rimSide < 0 ? 'Near rim · add a little power' : 'Far rim · ease off slightly';
+    if (!ball.descendingAtRim) coaching = 'Clipped the rim · aim higher';
+    return { reason: 'rim', coaching };
+  }
+  if (ball.singerHit) return { reason: 'blocked', coaching: 'Singer block · wait for a gap' };
+  if (ball.firstSurface === 'monitor' || ball.firstSurface === 'amp') {
+    const name = ball.firstSurface === 'monitor' ? 'Monitor' : 'Amp';
+    return { reason: 'blocked', coaching: name + ' block · lift your arc' };
+  }
+  // Compare the uninterrupted launch arc with the rim. A floor ricochet or
+  // rolling rebound several metres later cannot reverse short/long advice.
+  if (ball.firstArcRange === null) return { reason: 'low', coaching: 'Too low · aim higher' };
+  if (ball.firstArcRange < RIM_X) {
+    return { reason: 'short', coaching: ball.launchPower >= 94
+      ? 'Too short · use a flatter arc' : 'Too short · add power' };
+  }
+  return { reason: 'long', coaching: 'Too long · use less power' };
+}
+
 // Find the first contact made by a moving point with a capsule. Inflate stage
 // edges by the radius of the ball, so rounded corners and high speeds are safe.
 function sweepEdge(x, y, dx, dy, ax, ay, bx, by, radius) {
@@ -166,8 +232,15 @@ export class Simulation {
       ? Math.sin((phase - .79) * Math.PI / .15) * (.24 + .072 * index) : 0;
     const gait = this.time * (.95 + .115 * index);
     this.singer.active = index > 0;
-    this.singer.x = index ? -.10 + 1.24 * Math.sin(gait) : -.59 + .18 * Math.sin(gait);
-    this.singer.y = index >= 6 ? Math.max(0, Math.sin(gait * .5 - 1.8)) ** 9 * .62 : 0;
+    this.singer.height = 2.08;
+    if (PHRASES[index]) updateChoreography(this.singer, index, this.time);
+    else {
+      this.singer.x = index ? -.10 + 1.24 * Math.sin(gait) : -.59 + .18 * Math.sin(gait);
+      this.singer.y = this.singer.crouch = 0;
+      this.singer.cue = '';
+      this.singer.action = 'pace';
+      this.singer.direction = Math.cos(gait) < 0 ? -1 : 1;
+    }
   }
 
   velocity(angle, power) {
@@ -189,9 +262,13 @@ export class Simulation {
   }
   launch(angle = DEFAULT_AIM.angle, power = DEFAULT_AIM.power) {
     if (this.phase !== 'ready' || this.remaining <= 0 || !Number.isFinite(angle) || !Number.isFinite(power)) return false;
-    Object.assign(this.ball, ORIGIN, this.velocity(angle, power), {
+    const velocity = this.velocity(angle, power);
+    const discriminant = velocity.vy ** 2 - 2 * G * (RIM_Y - ORIGIN.y);
+    const firstArcRange = discriminant < 0 ? null
+      : ORIGIN.x + velocity.vx * (velocity.vy + Math.sqrt(discriminant)) / G;
+    Object.assign(this.ball, ORIGIN, velocity, {
       active: true, banks: 0, age: 0, lastSurface: '', lastImpact: -1, lastRim: -1,
-      singerHit: false, rimHit: false,
+      singerHit: false, rimHit: false, firstArcRange, launchPower: power, firstSurface: '', deadSince: null,
     });
     this.remaining--;
     this.stats.throws++;
@@ -251,6 +328,11 @@ export class Simulation {
       b.x += dx * fraction; b.y += dy * fraction;
       b.vy -= G * remainingTime * fraction;
       if (!hit) break;
+      if (!b.firstSurface) b.firstSurface = hit.id;
+      if (hit.kind === 'rim' && !b.rimHit) {
+        b.rimSide = b.x - RIM_X;
+        b.descendingAtRim = b.vy < 0;
+      }
       const tangentRetention = hit.kind === 'rim' ? .67 : .87;
       const restitution = hit.kind === 'bank' ? .79 : hit.kind === 'singer' ? .57 : .34;
       const normalSpeed = b.vx * hit.nx + b.vy * hit.ny;
@@ -270,7 +352,14 @@ export class Simulation {
       }
       remainingTime *= 1 - fraction;
     }
-    if (b.x < -3.55 || b.x > 3.55 || b.age >= 3.3 ||
+    // Every contact, including the singer's passive deflection, retains at
+    // most the incoming kinetic energy. Even a perfect redirection upwards
+    // cannot rescue a ball once this upper bound falls below the rim.
+    const ceiling = b.y + (b.vx * b.vx + b.vy * b.vy) / (2 * G);
+    if (b.banks && ceiling < RIM_Y - .06) b.deadSince ??= b.age;
+    else b.deadSince = null;
+    const dead = b.deadSince !== null && b.age - b.deadSince >= .20;
+    if (dead || b.x < -3.55 || b.x > 3.55 || b.age >= 3.3 ||
         (b.y < BALL_RADIUS + .02 && Math.hypot(b.vx, b.vy) < .48)) this.resolve(false);
   }
 
@@ -291,7 +380,7 @@ export class Simulation {
     } else this.combo = 0;
     this.score += base + bonus;
     this.lastShot = { made, base, bonus, points: base + bonus, banks: b.banks,
-      rim: b.rimHit, singer: b.singerHit, priorCombo };
+      rim: b.rimHit, singer: b.singerHit, priorCombo, ...(made ? {} : missFeedback(b)) };
     this.emit(made ? 'make' : 'miss', this.lastShot);
   }
   finishShot() {
