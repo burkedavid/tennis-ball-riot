@@ -1,0 +1,15 @@
+{
+  "id": "./",
+  "name": "Iggy Pop Tennis Ball Riot",
+  "short_name": "Tennis Ball Riot",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#130e0d",
+  "theme_color": "#130e0d",
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

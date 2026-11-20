@@ -1,547 +1,80 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#191712">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="format-detection" content="telephone=no">
-  <title>Iggy Pop Tennis Ball Riot</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Arial Black', Arial, sans-serif;
-      background: #000;
-      color: #fff;
-      overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      height: 100dvh; /* Dynamic viewport height for mobile browsers */
-      margin: 0;
-      padding: 0;
-      -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS */
-      touch-action: none; /* Prevent default touch behaviors */
-    }
-
-    #game-container {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    canvas {
-      display: block;
-      background: #1a1a1a;
-      width: 100% !important;
-      height: 100% !important;
-      touch-action: none; /* Prevent scroll on canvas */
-      user-select: none; /* Prevent text selection */
-      -webkit-user-select: none;
-      object-fit: contain; /* Maintain aspect ratio */
-    }
-
-    /* Desktop-specific adjustments */
-    @media (min-width: 769px) {
-      #game-container {
-        max-width: 1200px;
-        max-height: 800px;
-        margin: 0 auto;
-      }
-
-      canvas {
-        width: auto !important;
-        height: auto !important;
-        max-width: 100%;
-        max-height: 100%;
-      }
-    }
-
-    /* Mobile-specific adjustments */
-    @media (max-width: 768px) {
-      body {
-        padding: 0;
-      }
-
-      #game-container {
-        width: 100vw;
-        height: 100vh;
-        height: 100dvh;
-      }
-    }
-
-    /* Loading Screen */
-    #loading-screen {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, #1a1a1a 0%, #2d0a4e 100%);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-      transition: opacity 0.5s;
-    }
-
-    #loading-screen.hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .loading-text {
-      font-size: 2rem;
-      color: #ff00ff;
-      text-shadow: 0 0 10px #ff00ff;
-      margin-bottom: 20px;
-      animation: pulse 1.5s infinite;
-    }
-
-    .loading-bar {
-      width: 300px;
-      height: 20px;
-      background: #333;
-      border: 2px solid #ff00ff;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
-    }
-
-    .loading-progress {
-      height: 100%;
-      background: linear-gradient(90deg, #ff00ff, #00ffff);
-      width: 0%;
-      transition: width 0.3s;
-      box-shadow: 0 0 10px rgba(255, 0, 255, 0.8);
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.7; transform: scale(1.05); }
-    }
-
-    /* UI Overlay */
-    #ui-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 100; /* Above canvas */
-    }
-
-    #ui-overlay > * {
-      pointer-events: auto;
-    }
-
-    /* HUD */
-    .hud {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      right: 20px;
-      background: rgba(0, 0, 0, 0.7);
-      padding: 15px;
-      border: 3px solid #ff00ff;
-      border-radius: 10px;
-      box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
-    }
-
-    @media (max-width: 768px) {
-      .hud {
-        top: 10px;
-        left: 10px;
-        right: 10px;
-        padding: 10px;
-        font-size: 0.9rem;
-      }
-    }
-
-    .hud-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-
-    .hud-row:last-child {
-      margin-bottom: 0;
-    }
-
-    .hud-label {
-      font-size: 1rem;
-      color: #00ffff;
-      text-shadow: 0 0 5px #00ffff;
-    }
-
-    .hud-value {
-      font-size: 1.2rem;
-      color: #fff;
-      font-weight: bold;
-    }
-
-    /* Controls */
-    .controls {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.8);
-      padding: 20px;
-      border: 3px solid #ff00ff;
-      border-radius: 10px;
-      box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
-      min-width: 400px;
-      display: none; /* Hidden by default - shown when game starts */
-    }
-
-    .control-row {
-      display: flex;
-      align-items: center;
-      margin-bottom: 15px;
-      gap: 15px;
-    }
-
-    .control-row:last-child {
-      margin-bottom: 0;
-    }
-
-    .control-label {
-      font-size: 0.9rem;
-      color: #00ffff;
-      min-width: 60px;
-    }
-
-    .slider-container {
-      flex: 1;
-      position: relative;
-    }
-
-    .slider {
-      width: 100%;
-      height: 8px;
-      background: #333;
-      border-radius: 4px;
-      position: relative;
-      cursor: pointer;
-      border: 1px solid #ff00ff;
-    }
-
-    .slider-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #ff00ff, #00ffff);
-      border-radius: 4px;
-      transition: width 0.1s;
-    }
-
-    .slider-value {
-      font-size: 0.9rem;
-      color: #fff;
-      min-width: 50px;
-      text-align: right;
-    }
-
-    .btn-throw {
-      width: 100%;
-      padding: 15px;
-      background: linear-gradient(135deg, #ff00ff, #ff0080);
-      border: none;
-      border-radius: 8px;
-      color: #fff;
-      font-size: 1.2rem;
-      font-weight: bold;
-      cursor: pointer;
-      text-transform: uppercase;
-      box-shadow: 0 4px 15px rgba(255, 0, 255, 0.5);
-      transition: all 0.2s;
-    }
-
-    .btn-throw:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(255, 0, 255, 0.7);
-    }
-
-    .btn-throw:active {
-      transform: translateY(0);
-    }
-
-    .btn-throw:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    /* Drag Instructions */
-    .drag-instructions {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.9);
-      padding: 20px 30px;
-      border: 3px solid #ff00ff;
-      border-radius: 10px;
-      box-shadow: 0 0 30px rgba(255, 0, 255, 0.8);
-      text-align: center;
-      transition: opacity 0.3s ease;
-      max-width: 90%;
-      opacity: 0; /* Start hidden */
-      pointer-events: none;
-      z-index: 300; /* Above everything including modals */
-    }
-
-    .drag-instructions.visible {
-      opacity: 1;
-      pointer-events: auto;
-      animation: fadeIn 0.5s ease-in;
-    }
-
-    @media (max-width: 768px) {
-      .drag-instructions {
-        bottom: 10px;
-        padding: 15px 20px;
-        font-size: 0.85rem;
-      }
-    }
-
-    .instruction-title {
-      font-size: 1.5rem;
-      color: #ff00ff;
-      text-shadow: 0 0 10px #ff00ff;
-      margin-bottom: 15px;
-      font-weight: bold;
-    }
-
-    .instruction-text {
-      font-size: 1rem;
-      line-height: 1.8;
-      color: #fff;
-    }
-
-    .instruction-text p {
-      margin: 5px 0;
-    }
-
-    .instruction-text strong {
-      color: #00ffff;
-      text-shadow: 0 0 5px #00ffff;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-      to { opacity: 1; transform: translateX(-50%) translateY(0); }
-    }
-
-    /* Modal */
-    .modal {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0, 0, 0, 0.95);
-      border: 4px solid #ff00ff;
-      border-radius: 15px;
-      padding: 40px;
-      box-shadow: 0 0 40px rgba(255, 0, 255, 0.8);
-      min-width: 400px;
-      text-align: center;
-      display: none;
-      max-width: 90%;
-      z-index: 200; /* Above everything */
-    }
-
-    @media (max-width: 768px) {
-      .modal {
-        min-width: 280px;
-        padding: 25px 20px;
-        border-width: 3px;
-      }
-
-      .modal-title {
-        font-size: 1.5rem !important;
-      }
-
-      .modal-content {
-        font-size: 1rem !important;
-      }
-
-      .btn {
-        padding: 10px 20px !important;
-        font-size: 0.9rem !important;
-      }
-    }
-
-    .modal.active {
-      display: block;
-    }
-
-    .modal-title {
-      font-size: 2rem;
-      color: #ff00ff;
-      text-shadow: 0 0 10px #ff00ff;
-      margin-bottom: 20px;
-      text-transform: uppercase;
-    }
-
-    .modal-content {
-      font-size: 1.2rem;
-      margin-bottom: 30px;
-      line-height: 1.6;
-    }
-
-    .modal-buttons {
-      display: flex;
-      gap: 15px;
-      justify-content: center;
-    }
-
-    .btn {
-      padding: 12px 30px;
-      background: linear-gradient(135deg, #ff00ff, #ff0080);
-      border: none;
-      border-radius: 8px;
-      color: #fff;
-      font-size: 1rem;
-      font-weight: bold;
-      cursor: pointer;
-      text-transform: uppercase;
-      transition: all 0.2s;
-      touch-action: manipulation; /* Enable touch events on buttons */
-      -webkit-tap-highlight-color: rgba(255, 0, 255, 0.3); /* Visual feedback on tap */
-      user-select: none; /* Prevent text selection */
-      -webkit-user-select: none;
-    }
-
-    .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(255, 0, 255, 0.7);
-    }
-
-    .btn:active {
-      transform: scale(0.98); /* Visual feedback on press */
-    }
-
-    .btn-secondary {
-      background: linear-gradient(135deg, #333, #555);
-    }
-  </style>
+  <meta name="apple-mobile-web-app-title" content="Tennis Ball Riot">
+  <meta name="description" content="A front-row arcade game. Time your throw, dodge the singer and land a tennis ball in the drummer’s pint.">
+  <link rel="manifest" href="./app.webmanifest">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="preload" href="/fonts/barlow-condensed-900.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/src/style.css">
+  <title>Iggy Pop · Tennis Ball Riot</title>
 </head>
-<body>
-  <div id="game-container">
-    <!-- Loading Screen -->
-    <div id="loading-screen">
-      <div class="loading-text">🎸 Tuning Guitars... 🎸</div>
-      <div class="loading-bar">
-        <div class="loading-progress" id="loading-progress"></div>
-      </div>
+<body data-screen="title">
+  <svg xmlns="http://www.w3.org/2000/svg" class="symbols" aria-hidden="true"><defs>
+    <symbol id="i-ball" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M4 7c6 1 8 5 7 14M13 3c-1 7 2 11 8 13"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 4.4 1.6c-1.1.9-1.9 1.4-1.9 2.7M12 17h.01"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="m7 3 14 9-14 9z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14" stroke-width="4"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M3 6h8m4 0h6M3 12h2m4 0h12M3 18h10m4 0h4"/><circle cx="13" cy="6" r="2"/><circle cx="7" cy="12" r="2"/><circle cx="15" cy="18" r="2"/></symbol>
+    <symbol id="i-audio" viewBox="0 0 24 24"><path d="M3 9h4l6-5v16l-6-5H3zM16 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></symbol>
+    <symbol id="i-muted" viewBox="0 0 24 24"><path d="M3 9h4l6-5v16l-6-5H3zM17 9l5 6m0-6-5 6"/></symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M7 4h10v5c0 4-2 6-5 6s-5-2-5-6zM7 6H3v2c0 3 2 5 5 5m9-7h4v2c0 3-2 5-5 5M12 15v4m-4 2h8"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  </defs></svg>
+  <main id="game">
+    <canvas id="stage" role="img" aria-label="A rock concert stage, with a pint glass beside the drummer to the right"></canvas>
+    <div class="shade" aria-hidden="true"></div>
+    <div id="title">
+      <header class="utility">
+        <div class="record"><svg class="ico"><use href="#i-trophy"/></svg><span>Personal best <b id="title-best">0</b></span></div>
+        <div class="tools"><button class="icon-button" id="title-mute" aria-label="Mute sound"><svg class="ico"><use href="#i-audio"/></svg></button><button class="icon-button" id="title-settings" aria-label="Settings"><svg class="ico"><use href="#i-settings"/></svg></button></div>
+      </header>
+      <section class="cover" aria-labelledby="title-name">
+        <div class="wordmark">
+          <span class="artist">Iggy Pop</span>
+          <h1 id="title-name"><span>Tennis Ball</span><strong>Riot!</strong></h1>
+        </div>
+        <div class="title-actions">
+          <p>Land a tennis ball in the drummer’s pint.</p>
+          <div class="play-row"><button class="primary" id="play" disabled><svg class="ico"><use href="#i-play"/></svg> Play now</button><button class="secondary" id="help"><svg class="ico"><use href="#i-help"/></svg> How to play</button></div>
+          <div id="load-line" role="status"><progress id="load-meter" max="100" value="0"></progress><span id="load-label">Tuning up…</span></div>
+        </div>
+      </section>
     </div>
-
-    <!-- UI Overlay -->
-    <div id="ui-overlay" style="display: none;">
-      <!-- HUD -->
-      <div class="hud">
-        <div class="hud-row">
-          <span class="hud-label">🎸 <span id="level-name">Sound Check</span></span>
-          <span class="hud-label">⭐ Score: <span id="score" class="hud-value">0</span></span>
-        </div>
-        <div class="hud-row">
-          <span class="hud-label">🎾 Balls: <span id="balls-remaining" class="hud-value">10</span></span>
-          <span class="hud-label">🎯 Goal: <span id="goal" class="hud-value">1/1</span></span>
-        </div>
+    <section id="hud" aria-label="Game controls" hidden>
+      <div class="hud-top">
+        <div class="set"><span id="song-count">Song 01 / 10</span><b id="song">Sound Check</b><small id="streak" hidden></small></div>
+        <div class="score"><span>Score</span><b id="points">0</b><small id="best-in-play">Best 0</small></div>
+        <button class="icon-button" id="pause" aria-label="Pause game"><svg class="ico"><use href="#i-pause"/></svg></button>
       </div>
-
-      <!-- Controls -->
-      <div class="controls" id="controls">
-        <div class="control-row">
-          <span class="control-label">Angle:</span>
-          <div class="slider-container">
-            <div class="slider" id="angle-slider">
-              <div class="slider-fill" id="angle-fill" style="width: 50%;"></div>
-            </div>
-          </div>
-          <span class="slider-value" id="angle-value">45°</span>
-        </div>
-        <div class="control-row">
-          <span class="control-label">Power:</span>
-          <div class="slider-container">
-            <div class="slider" id="power-slider">
-              <div class="slider-fill" id="power-fill" style="width: 50%;"></div>
-            </div>
-          </div>
-          <span class="slider-value" id="power-value">50%</span>
-        </div>
-        <div class="control-row">
-          <button class="btn-throw" id="btn-throw">🎵 Throw Ball 🎵</button>
-        </div>
+      <div id="throw-area" tabindex="0" role="group" aria-label="Throwing area. Drag up and right toward the pint. Keyboard: arrows adjust aim and power, Space throws, Escape pauses."></div>
+      <div class="readouts">
+        <div class="status-chip"><svg class="ico"><use href="#i-ball"/></svg><span><b id="stock">10</b> balls left</span></div>
+        <div class="status-chip"><span><b id="target">0 / 1</b> in the pint</span></div>
       </div>
-
-      <!-- Modals -->
-      <div class="modal" id="level-complete-modal">
-        <div class="modal-title">🎸 Level Complete! 🎸</div>
-        <div class="modal-content" id="level-complete-content"></div>
-        <div class="modal-buttons">
-          <button class="btn" id="btn-next-level">▶️ Next Level</button>
-          <button class="btn btn-secondary" id="btn-menu">🏠 Menu</button>
+      <div class="lower">
+        <div id="teaching" class="teaching"><span class="swipe" aria-hidden="true">↗</span><span><b>Drag up and right</b><small>Release to throw into the pint.</small><small class="keys">Arrow keys to aim · Space to throw</small></span></div>
+        <div id="aim-controls" hidden>
+          <label for="angle">Angle <output id="angle-out">60°</output></label><input type="range" id="angle" min="15" max="85" value="60">
+          <label for="power">Power <output id="power-out">70%</output></label><input type="range" id="power" min="0" max="100" value="70">
+          <button id="throw" class="primary">Throw ball</button>
         </div>
+        <div id="aim-readout" hidden></div>
       </div>
-
-      <div class="modal" id="game-over-modal">
-        <div class="modal-title">💀 Out of Balls! 💀</div>
-        <div class="modal-content" id="game-over-content"></div>
-        <div class="modal-buttons">
-          <button class="btn" id="btn-restart">🔄 Retry Level</button>
-          <button class="btn btn-secondary" id="btn-menu-gameover">🏠 Menu</button>
-        </div>
-      </div>
-
-      <div class="modal" id="pause-modal">
-        <div class="modal-title">⏸️ Paused</div>
-        <div class="modal-content">Game is paused</div>
-        <div class="modal-buttons">
-          <button class="btn" id="btn-resume">▶️ Resume</button>
-          <button class="btn btn-secondary" id="btn-restart-paused">🔄 Restart</button>
-          <button class="btn btn-secondary" id="btn-menu-paused">🏠 Menu</button>
-        </div>
-      </div>
-
-      <div class="modal active" id="menu-modal">
-        <div class="modal-title">🎸 Iggy Pop Tennis Ball Riot 🎸</div>
-        <div class="modal-content">
-          <p>Throw tennis balls into the drummer's glass!</p>
-          <div id="drag-instructions" style="margin-top: 20px; padding: 15px; background: rgba(255, 0, 255, 0.1); border: 2px solid #ff00ff; border-radius: 8px;">
-            <p style="font-size: 1.1rem; color: #ff00ff; margin-bottom: 10px;"><strong>🎾 How to Play:</strong></p>
-            <p style="font-size: 0.95rem; line-height: 1.6;">
-              🎯 <strong>Slingshot Controls:</strong><br>
-              👆 <strong>Tap</strong> on the ball<br>
-              ⬅️ <strong>Pull BACK</strong> (away from target)<br>
-              🚀 <strong>Release</strong> to launch forward!<br>
-              <span style="font-size: 0.85rem; color: #aaa; margin-top: 5px; display: block;">💡 Pull farther = More power | Aim your pull direction carefully!</span>
-            </p>
-          </div>
-          <p style="margin-top: 15px; font-size: 0.85rem; color: #aaa;">
-            Navigate obstacles, moving band members, and rowdy crowd bumps.
-          </p>
-        </div>
-        <div class="modal-buttons">
-          <button class="btn" id="btn-start">🎮 Start Game</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
+      <output id="surge" hidden></output><output id="feedback" aria-live="polite" hidden></output>
+    </section>
+  </main>
+  <dialog id="panel" aria-labelledby="panel-title">
+    <div class="panel-head"><h2 id="panel-title"></h2><button id="panel-close" class="icon-button" aria-label="Close"><svg class="ico"><use href="#i-close"/></svg></button></div>
+    <div id="panel-content"></div>
+  </dialog>
+  <div id="announce" class="sr" aria-live="polite" aria-atomic="true"></div>
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>

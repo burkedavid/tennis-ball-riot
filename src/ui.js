@@ -1,384 +1,273 @@
-/**
- * UI Manager
- * Handles all UI updates and interactions
- */
+import { DEFAULT_AIM, LEVELS } from './simulation.js';
 
-import { formatNumber } from './utils.js';
+const byId = (id) => document.getElementById(id);
+const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+const format = (value) => (Number(value) || 0).toLocaleString();
+const hidden = (id, hide) => { const el = byId(id); if (el.hidden !== hide) el.hidden = hide; };
+const label = (id, value) => { const el = byId(id); const text = String(value); if (el.textContent !== text) el.textContent = text; };
+const storage = {
+  read(key, fallback) { try { return JSON.parse(localStorage.getItem('riot-v2-' + key)) ?? fallback; } catch { return fallback; } },
+  write(key, value) { try { localStorage.setItem('riot-v2-' + key, JSON.stringify(value)); } catch { /* Private play remains available. */ } },
+};
 
-export class UIManager {
-  constructor() {
-    // Get DOM elements
-    this.elements = {
-      // HUD
-      levelName: document.getElementById('level-name'),
-      score: document.getElementById('score'),
-      ballsRemaining: document.getElementById('balls-remaining'),
-      goal: document.getElementById('goal'),
-
-      // Controls
-      controls: document.getElementById('controls'),
-      angleSlider: document.getElementById('angle-slider'),
-      angleFill: document.getElementById('angle-fill'),
-      angleValue: document.getElementById('angle-value'),
-      powerSlider: document.getElementById('power-slider'),
-      powerFill: document.getElementById('power-fill'),
-      powerValue: document.getElementById('power-value'),
-      btnThrow: document.getElementById('btn-throw'),
-
-      // Modals
-      uiOverlay: document.getElementById('ui-overlay'),
-      menuModal: document.getElementById('menu-modal'),
-      levelCompleteModal: document.getElementById('level-complete-modal'),
-      levelCompleteContent: document.getElementById('level-complete-content'),
-      gameOverModal: document.getElementById('game-over-modal'),
-      gameOverContent: document.getElementById('game-over-content'),
-      pauseModal: document.getElementById('pause-modal'),
-
-      // Buttons
-      btnStart: document.getElementById('btn-start'),
-      btnNextLevel: document.getElementById('btn-next-level'),
-      btnMenu: document.getElementById('btn-menu'),
-      btnRestart: document.getElementById('btn-restart'),
-      btnMenuGameover: document.getElementById('btn-menu-gameover'),
-      btnResume: document.getElementById('btn-resume'),
-      btnRestartPaused: document.getElementById('btn-restart-paused'),
-      btnMenuPaused: document.getElementById('btn-menu-paused'),
-    };
-
-    // Slider values
-    this.angle = 45;
-    this.power = 50;
-
-    // Setup event listeners
-    this.setupEventListeners();
-  }
-
-  /**
-   * Setup UI event listeners
-   */
-  setupEventListeners() {
-    // Angle slider
-    this.elements.angleSlider.addEventListener('click', (e) => {
-      this.updateSlider(e, 'angle', 5, 85);
-    });
-
-    this.elements.angleSlider.addEventListener('mousemove', (e) => {
-      if (e.buttons === 1) { // Left mouse button held
-        this.updateSlider(e, 'angle', 5, 85);
-      }
-    });
-
-    // Power slider
-    this.elements.powerSlider.addEventListener('click', (e) => {
-      this.updateSlider(e, 'power', 10, 100);
-    });
-
-    this.elements.powerSlider.addEventListener('mousemove', (e) => {
-      if (e.buttons === 1) {
-        this.updateSlider(e, 'power', 10, 100);
-      }
-    });
-  }
-
-  /**
-   * Enable drag-to-throw mode (hide sliders)
-   */
-  enableDragMode() {
-    // Hide the entire controls div
-    this.elements.controls.style.display = 'none';
-  }
-
-  /**
-   * Hide drag instructions permanently (called when game starts)
-   */
-  hideDragInstructions() {
-    const instructions = document.getElementById('drag-instructions');
-    if (instructions) {
-      instructions.remove();
-    }
-  }
-
-  /**
-   * Update slider value based on click position
-   * @param {MouseEvent} e
-   * @param {string} type - 'angle' or 'power'
-   * @param {number} min
-   * @param {number} max
-   */
-  updateSlider(e, type, min, max) {
-    const slider = e.currentTarget;
-    const rect = slider.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const percentage = Math.max(0, Math.min(1, x / rect.width));
-    const value = Math.round(min + (max - min) * percentage);
-
-    if (type === 'angle') {
-      this.angle = value;
-      this.elements.angleFill.style.width = `${percentage * 100}%`;
-      this.elements.angleValue.textContent = `${value}°`;
-    } else if (type === 'power') {
-      this.power = value;
-      this.elements.powerFill.style.width = `${percentage * 100}%`;
-      this.elements.powerValue.textContent = `${value}%`;
-    }
-  }
-
-  /**
-   * Get current angle value
-   * @returns {number}
-   */
-  getAngle() {
-    return this.angle;
-  }
-
-  /**
-   * Get current power value
-   * @returns {number}
-   */
-  getPower() {
-    return this.power;
-  }
-
-  /**
-   * Update HUD values
-   * @param {Object} data
-   */
-  updateHUD(data) {
-    if (data.levelName !== undefined) {
-      this.elements.levelName.textContent = data.levelName;
-    }
-    if (data.score !== undefined) {
-      this.elements.score.textContent = formatNumber(data.score);
-    }
-    if (data.ballsRemaining !== undefined) {
-      this.elements.ballsRemaining.textContent = data.ballsRemaining;
-    }
-    if (data.goal !== undefined) {
-      this.elements.goal.textContent = data.goal;
-    }
-  }
-
-  /**
-   * Enable/disable throw button
-   * @param {boolean} enabled
-   */
-  setThrowButtonEnabled(enabled) {
-    this.elements.btnThrow.disabled = !enabled;
-  }
-
-  /**
-   * Show/hide UI overlay
-   * @param {boolean} show
-   */
-  showUI(show) {
-    this.elements.uiOverlay.style.display = show ? 'block' : 'none';
-  }
-
-  /**
-   * Show modal
-   * @param {string} modalName - 'menu', 'levelComplete', 'gameOver', 'pause'
-   */
-  showModal(modalName) {
-    // Hide all modals first
-    this.hideAllModals();
-
-    // Show requested modal
-    switch (modalName) {
-      case 'menu':
-        this.elements.menuModal.classList.add('active');
-        break;
-      case 'levelComplete':
-        this.elements.levelCompleteModal.classList.add('active');
-        break;
-      case 'gameOver':
-        this.elements.gameOverModal.classList.add('active');
-        break;
-      case 'pause':
-        this.elements.pauseModal.classList.add('active');
-        break;
-    }
-  }
-
-  /**
-   * Hide all modals
-   */
-  hideAllModals() {
-    this.elements.menuModal.classList.remove('active');
-    this.elements.levelCompleteModal.classList.remove('active');
-    this.elements.gameOverModal.classList.remove('active');
-    this.elements.pauseModal.classList.remove('active');
-  }
-
-  /**
-   * Set level complete content
-   * @param {Object} data
-   */
-  setLevelCompleteContent(data) {
-    const html = `
-      <p>Shots Made: ${data.shotsMade}/${data.goalShots}</p>
-      <p>Balls Used: ${data.ballsUsed}/${data.totalBalls}</p>
-      ${data.bonus > 0 ? `<p>Bonus: +${data.bonus}</p>` : ''}
-      <p><strong>Total Score: ${formatNumber(data.totalScore)}</strong></p>
-    `;
-    this.elements.levelCompleteContent.innerHTML = html;
-  }
-
-  /**
-   * Set game over content
-   * @param {Object} data
-   */
-  setGameOverContent(data) {
-    const html = `
-      <p>Shots Made: ${data.shotsMade}/${data.goalShots}</p>
-      <p>Final Score: ${formatNumber(data.score)}</p>
-      <p style="margin-top: 15px; color: #888;">You ran out of balls!</p>
-    `;
-    this.elements.gameOverContent.innerHTML = html;
-  }
-
-  /**
-   * Show floating text at position
-   * @param {string} text
-   * @param {number} x
-   * @param {number} y
-   * @param {string} color
-   */
-  showFloatingText(text, x, y, color = '#00ffff') {
-    const textElement = document.createElement('div');
-    textElement.textContent = text;
-    textElement.style.position = 'absolute';
-    textElement.style.left = `${x}px`;
-    textElement.style.top = `${y}px`;
-    textElement.style.color = color;
-    textElement.style.fontSize = '24px';
-    textElement.style.fontWeight = 'bold';
-    textElement.style.textShadow = `0 0 10px ${color}`;
-    textElement.style.pointerEvents = 'none';
-    textElement.style.zIndex = '1000';
-    textElement.style.transform = 'translate(-50%, -50%)';
-    textElement.style.transition = 'all 1s ease-out';
-
-    this.elements.uiOverlay.appendChild(textElement);
-
-    // Animate
-    setTimeout(() => {
-      textElement.style.top = `${y - 50}px`;
-      textElement.style.opacity = '0';
-    }, 50);
-
-    // Remove after animation
-    setTimeout(() => {
-      textElement.remove();
-    }, 1100);
-  }
-
-  /**
-   * Bind button callbacks with mobile-friendly touch events
-   * @param {Object} callbacks
-   */
-  bindCallbacks(callbacks) {
-    // Helper to bind both click and touch events for mobile compatibility
-    const bindButtonEvents = (button, handler, logMessage) => {
-      if (!button) return;
-
-      const eventHandler = (e) => {
-        e.preventDefault(); // Prevent default behavior
-        e.stopPropagation(); // Stop event bubbling
-        console.log(logMessage);
-        handler();
-      };
-
-      // Bind both click and touchend for maximum compatibility
-      button.addEventListener('click', eventHandler);
-      button.addEventListener('touchend', eventHandler);
-    };
-
-    if (callbacks.onStart) {
-      bindButtonEvents(
-        this.elements.btnStart,
-        callbacks.onStart,
-        '🎮 Start button clicked'
-      );
-    }
-    if (callbacks.onThrow) {
-      bindButtonEvents(
-        this.elements.btnThrow,
-        callbacks.onThrow,
-        '🎾 Throw button clicked'
-      );
-    }
-    if (callbacks.onResume) {
-      bindButtonEvents(
-        this.elements.btnResume,
-        callbacks.onResume,
-        '▶️ Resume button clicked'
-      );
-    }
-    if (callbacks.onNextLevel) {
-      bindButtonEvents(
-        this.elements.btnNextLevel,
-        callbacks.onNextLevel,
-        '⏭️ Next Level button clicked'
-      );
-    }
-    if (callbacks.onRestart) {
-      bindButtonEvents(
-        this.elements.btnRestart,
-        callbacks.onRestart,
-        '🔄 Restart button clicked'
-      );
-      bindButtonEvents(
-        this.elements.btnRestartPaused,
-        callbacks.onRestart,
-        '🔄 Restart button clicked (paused)'
-      );
-    }
-    if (callbacks.onMenu) {
-      bindButtonEvents(
-        this.elements.btnMenu,
-        callbacks.onMenu,
-        '🏠 Menu button clicked'
-      );
-      bindButtonEvents(
-        this.elements.btnMenuGameover,
-        callbacks.onMenu,
-        '🏠 Menu button clicked (game over)'
-      );
-      bindButtonEvents(
-        this.elements.btnMenuPaused,
-        callbacks.onMenu,
-        '🏠 Menu button clicked (paused)'
-      );
-    }
-  }
-
-  /**
-   * Apply crowd bump effect to UI
-   * @param {number} intensity
-   */
-  applyCrowdBump(intensity = 0.3) {
-    // Shake the controls
-    const controls = this.elements.controls;
-    const originalTransform = controls.style.transform;
-
-    const shakeAmount = 10 * intensity;
-    const shakes = 5;
-    let currentShake = 0;
-
-    const shakeInterval = setInterval(() => {
-      if (currentShake >= shakes) {
-        controls.style.transform = originalTransform;
-        clearInterval(shakeInterval);
-        return;
-      }
-
-      const offsetX = (Math.random() - 0.5) * shakeAmount;
-      const offsetY = (Math.random() - 0.5) * shakeAmount;
-      controls.style.transform = `translate(calc(-50% + ${offsetX}px), ${offsetY}px)`;
-
-      currentShake++;
-    }, 50);
-  }
+function readSettings() {
+  const saved = storage.read('settings', {}) || {};
+  return {
+    quality: ['low','medium','high','ultra'].includes(saved.quality) ? saved.quality : 'auto',
+    controls: saved.controls === 'aim' ? 'aim' : 'flick',
+    battery: saved.battery === true,
+    reduced: typeof saved.reduced === 'boolean' ? saved.reduced : matchMedia('(prefers-reduced-motion: reduce)').matches,
+    muted: saved.muted === true,
+  };
 }
 
-export default UIManager;
+const button = (name, action, primary = false) =>
+  '<button class="' + (primary ? 'primary' : 'secondary') + '" data-action="' + action + '">' + name + '</button>';
+const buttons = (...items) => '<div class="panel-actions">' + items.join('') + '</div>';
+const stats = (rows) => '<dl class="stats">' + rows.map(([name,value]) => '<dt>' + name + '</dt><dd>' + value + '</dd>').join('') + '</dl>';
+
+export function createUI(actions) {
+  const settings = readSettings();
+  const dialog = byId('panel');
+  const area = byId('throw-area');
+  let sim, lastPhase, panel = '', back = '', trigger = null;
+  let gesture = null, angle = DEFAULT_AIM.angle, power = DEFAULT_AIM.power;
+  let feedbackTime = 0, prevTime = performance.now(), firstShot = true;
+  let best = Math.max(0, Number(storage.read('best',0)) || 0);
+  let kbAim = false, renderValues = '';
+  let wasReady = false;
+  const describeAim = () => Math.round(angle) + '°  ·  ' + Math.round(power) + '% power';
+  const controllable = () => sim?.phase === 'ready' && !panel;
+
+  function refreshSettings() {
+    byId('title-mute').setAttribute('aria-label',settings.muted ? 'Enable sound' : 'Mute sound');
+    byId('title-mute').setAttribute('aria-pressed',String(settings.muted));
+    byId('title-mute').querySelector('use').setAttribute('href',settings.muted ? '#i-muted' : '#i-audio');
+    document.documentElement.classList.toggle('reduce',settings.reduced);
+  }
+  function applySettings() {
+    refreshSettings();
+    storage.write('settings',settings);
+    actions.settings?.(settings);
+  }
+  function newAim(a,p,preview=true) {
+    angle=clamp(a,15,85); power=clamp(p,0,100);
+    byId('angle').value=angle;
+    byId('power').value=power;
+    label('angle-out',Math.round(angle)+'°');
+    label('power-out',Math.round(power)+'%');
+    label('aim-readout',describeAim());
+    if(preview && controllable()) actions.aim?.(angle,power);
+  }
+  function cancelGesture() {
+    const pointer = gesture?.id;
+    gesture = null;
+    if(pointer !== undefined && area.hasPointerCapture(pointer)) area.releasePointerCapture(pointer);
+    actions.cancelAim?.();
+    kbAim = false;
+    hidden('aim-readout',true);
+  }
+  function closePanel(restore=true) {
+    panel=''; back='';
+    if(dialog.open) dialog.close();
+    if(restore && trigger?.isConnected && trigger.getClientRects().length) trigger.focus({preventScroll:true});
+    trigger=null;
+  }
+  function showPanel(id,title,html,canClose=true) {
+    if(!dialog.open) trigger=document.activeElement;
+    cancelGesture(); panel=id;
+    label('panel-title',title);
+    byId('panel-content').innerHTML=html;
+    hidden('panel-close',!canClose);
+    if(!dialog.open) dialog.showModal();
+    const primary = dialog.querySelector('.primary') || dialog.querySelector('select');
+    (primary || byId('panel-close')).focus({preventScroll:true});
+  }
+  function start() {
+    if(!wasReady) return;
+    actions.unlockAudio?.(); closePanel(false); firstShot=true;
+    actions.start(); area.focus({preventScroll:true});
+  }
+  function closeCurrent() {
+    if(panel==='error' || panel==='result') return;
+    if(back==='pause') {back=''; showPause(); return;}
+    const resume=sim?.phase==='paused';
+    closePanel(); if(resume) {actions.resume(); area.focus({preventScroll:true});}
+  }
+  function showPause() {
+    if(!['ready','flight','settling','paused'].includes(sim?.phase)) return;
+    if(sim.phase!=='paused') actions.pause();
+    showPanel('pause','Gig paused',buttons(button('Resume','resume',true),button('Retry level','retry')) +
+      buttons(button('Settings','settings'),button('How to play','help'),button('Title screen','menu')));
+  }
+  function showHelp() {
+    if(panel==='pause') back='pause';
+    showPanel('help','How to play','<ol><li><b>Aim for the pint</b> beside the drummer. The ball has to drop through the rim from above.</li><li><b>Drag up and right</b> in the lower half of the screen, then release. A longer drag adds power. The dots show the start of the arc.</li><li><b>Watch the singer and crowd.</b> Time a clean shot or bounce off the stage gear. Consecutive makes build your score.</li></ol><p>For an alternative to dragging, select <b>Aim &amp; Throw</b> in Settings. On a keyboard, use ← → for angle, ↑ ↓ for power, Space to throw and Esc to pause.</p><p><a class="credits" href="./credits.txt" target="_blank" rel="noopener">Music, models and credits</a></p>' + buttons(button(back==='pause'?'Back':'Got it','close',true)));
+  }
+  function showSettings() {
+    if(panel==='pause') back='pause';
+    const select=(id,name,options)=>'<div class="setting"><label for="opt-'+id+'">'+name+'</label><select id="opt-'+id+'" data-option="'+id+'">'+options.map(([value,title])=>'<option value="'+value+'" '+(settings[id]===value?'selected':'')+'>'+title+'</option>').join('')+'</select></div>';
+    const toggle=(id,name)=>'<div class="setting"><label for="opt-'+id+'">'+name+'</label><input type="checkbox" role="switch" id="opt-'+id+'" data-option="'+id+'" '+(settings[id]?'checked':'')+'></div>';
+    showPanel('settings','Settings','<div class="settings-list">'+
+      select('controls','Controls',[['flick','Drag & release'],['aim','Aim & Throw']])+
+      select('quality','Graphics',['auto','low','medium','high','ultra'].map(k=>[k,k[0].toUpperCase()+k.slice(1)]))+
+      toggle('battery','Battery saver (30 fps)')+toggle('reduced','Reduce effects')+toggle('muted','Mute sound')+'</div>'+buttons(button('Done','close',true)));
+  }
+  function showResult() {
+    const {phase,score,makes,level,levelIndex,stats:runStats}=sim;
+    const failed=phase==='failed', won=phase==='victory';
+    const title=won?'House lights up!':failed?'Out of balls':'Song cleared!';
+    const rows=[['Score',format(score)],['Pints hit',makes+' / '+level.goal],['Best streak',failed?sim.levelBest:runStats.bestCombo]];
+    if(sim.earlyBonus) rows.push(['Quick-clear bonus','+'+sim.earlyBonus]);
+    if(won) rows.push(['Accuracy',Math.round(sim.accuracy)+'%'],['Bank shots',runStats.banks]);
+    const next = failed?'Retry level':won?'Play again':'Continue';
+    const intro = won?'Ten songs. The drummer raises his glass.':failed?level.name:'Up next · '+LEVELS[levelIndex+1].name;
+    showPanel('result',title,'<p>'+intro+'</p>'+stats(rows)+buttons(button(next,failed?'retry':won?'start':'next',true),button('Title screen','menu')),false);
+    label('announce',title+'. Score '+score+'. '+intro+'.');
+  }
+  dialog.addEventListener('cancel',e=>{e.preventDefault();closeCurrent();});
+  byId('panel-close').onclick=closeCurrent;
+  byId('panel-content').addEventListener('change',e=>{
+    const key=e.target.dataset.option;
+    if(!key || !(key in settings)) return;
+    settings[key]=e.target.type==='checkbox'?e.target.checked:e.target.value;
+    actions.unlockAudio?.(); applySettings();
+  });
+  byId('panel-content').addEventListener('click',e=>{
+    const key=e.target.closest('[data-action]')?.dataset.action;
+    if(!key)return;
+    actions.unlockAudio?.();
+    switch(key) {
+      case 'close': case 'resume': closeCurrent(); break;
+      case 'help': showHelp(); break;
+      case 'settings': showSettings(); break;
+      case 'start': start(); break;
+      case 'menu': closePanel(false); actions.menu(); byId('play').focus({preventScroll:true}); break;
+      case 'retry': case 'next': closePanel(false); actions[key](); area.focus({preventScroll:true}); break;
+    }
+  });
+  byId('play').onclick=start;
+  byId('help').onclick=showHelp;
+  byId('title-settings').onclick=showSettings;
+  byId('title-mute').onclick=()=>{settings.muted=!settings.muted;applySettings();actions.unlockAudio?.();};
+  byId('pause').onclick=showPause;
+
+  function touchAim(x,y) {
+    if(!gesture) return false;
+    const dx=(x-gesture.x)/gesture.scale,dy=(gesture.y-y)/gesture.scale;
+    const distance=Math.hypot(dx,dy);
+    if(dy<=0 || distance<10) {
+      gesture.valid=false; actions.cancelAim?.(); hidden('aim-readout',true); return false;
+    }
+    gesture.valid=true;
+    newAim(Math.atan2(dy,dx)*180/Math.PI,distance/120*100);
+    hidden('aim-readout',false); hidden('teaching',true);
+    return true;
+  }
+  area.addEventListener('pointerdown',e=>{
+    if(!controllable() || settings.controls!=='flick' || gesture || !e.isPrimary || e.button!==0) return;
+    e.preventDefault(); area.focus({preventScroll:true}); actions.unlockAudio?.();
+    gesture={id:e.pointerId,x:e.clientX,y:e.clientY,scale:clamp(innerWidth/360,.86,1.35),valid:false};
+    area.setPointerCapture(e.pointerId);
+  });
+  area.addEventListener('pointermove',e=>{if(e.pointerId===gesture?.id) touchAim(e.clientX,e.clientY);});
+  function fire() {
+    if(!controllable())return;
+    actions.unlockAudio?.();
+    actions.throw(angle,power); kbAim=false; hidden('aim-readout',true);
+  }
+  area.addEventListener('pointerup',e=>{
+    if(e.pointerId!==gesture?.id)return;
+    const valid=touchAim(e.clientX,e.clientY); cancelGesture(); if(valid) fire();
+  });
+  area.addEventListener('pointercancel',e=>{if(e.pointerId===gesture?.id) cancelGesture();});
+  area.addEventListener('lostpointercapture',e=>{if(e.pointerId===gesture?.id) cancelGesture();});
+  for(const id of ['angle','power']) byId(id).addEventListener('input',()=>newAim(+byId('angle').value,+byId('power').value));
+  byId('throw').onclick=fire;
+  document.addEventListener('keydown',e=>{
+    if(panel || e.altKey || e.ctrlKey || e.metaKey)return;
+    if(e.key==='Escape' && ['ready','flight','settling'].includes(sim?.phase)){e.preventDefault(); showPause();return;}
+    if(!controllable())return;
+    const onRange=e.target.matches?.('input[type=range]');
+    if(e.key===' ' && (!e.target.closest?.('button,select,textarea') || onRange)) {e.preventDefault();if(!e.repeat) fire();return;}
+    if(onRange || e.target.matches?.('select,textarea')) return;
+    if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key))return;
+    e.preventDefault();
+    const da=e.key==='ArrowLeft'?1:e.key==='ArrowRight'?-1:0;
+    const dp=e.key==='ArrowUp'?1:e.key==='ArrowDown'?-1:0;
+    kbAim=true; newAim(angle+da,power+dp);
+  });
+  function interrupt() {
+    cancelGesture();
+    if(!panel && ['ready','flight','settling'].includes(sim?.phase)) showPause();
+  }
+  document.addEventListener('visibilitychange',()=>{if(document.hidden) interrupt();});
+  window.addEventListener('blur',interrupt);
+  window.addEventListener('resize',()=>{if(gesture) cancelGesture();});
+  function flash(text,seconds=1.2) {
+    label('feedback',text); hidden('feedback',false); feedbackTime=seconds;
+  }
+  function event(type,detail={}) {
+    if(typeof type==='object') {detail=type;type=detail.type;}
+    if(type==='make') flash((detail.banks===0?'Clean shot':detail.banks===1?'Bank shot':'Double bank')+' · '+detail.base+' + '+detail.bonus);
+    if(type==='miss') flash(detail.rim?'Rim out!':'Missed the pint');
+    if(type==='singer') flash('Singer deflection',.65);
+    if(type==='rim') flash('On the rim!',.45);
+    if(type==='launch') {firstShot=false;hidden('teaching',true);}
+  }
+  function render(state) {
+    sim=state;
+    const phase=state.phase, title=phase==='title';
+    const now=performance.now(), dt=Math.min(.1,(now-prevTime)/1000);prevTime=now;
+    if(phase!==lastPhase) {
+      hidden('title',!title); hidden('hud',title);document.body.dataset.screen=title?'title':'game';
+      if(['clear','failed','victory'].includes(phase)) showResult();
+      else if(phase==='paused' && !panel) showPause();
+      else if(phase==='ready'){
+        if(lastPhase==='title'||['failed','clear','victory'].includes(lastPhase))newAim(DEFAULT_AIM.angle,DEFAULT_AIM.power,false);
+        if(settings.controls==='aim' || (firstShot && !kbAim)) actions.aim?.(angle,power);
+        if(lastPhase==='title') area.focus({preventScroll:true});
+      }
+      if(title && lastPhase && !panel) byId('play').focus({preventScroll:true});
+      if(title || (phase==='ready' && lastPhase!=='settling')) {feedbackTime=0;hidden('feedback',true);}
+      lastPhase=phase;
+    }
+    if(state.score>best){best=state.score;storage.write('best',best);label('title-best',format(best));}
+    if(title)return;
+    const values=[state.levelIndex,state.score,state.remaining,state.makes,phase].join(',');
+    if(renderValues!==values){
+      renderValues=values;
+      label('song-count','Song '+String(state.levelIndex+1).padStart(2,'0')+' / '+LEVELS.length);
+      label('song',state.level.name);label('points',format(state.score));label('stock',state.remaining);label('target',state.makes+' / '+state.level.goal);
+      label('best-in-play','Best '+format(best)); label('streak',state.combo+' streak'); hidden('streak',state.combo<2);
+      for(const id of ['throw','angle','power'])byId(id).disabled=phase!=='ready';
+      if(phase==='ready')label('announce',state.level.name+'. '+state.remaining+' balls left. '+state.makes+' of '+state.level.goal+' in the pint.');
+    }
+    const aiming=settings.controls==='aim';
+    hidden('aim-controls',!aiming);hidden('teaching',!(firstShot && !aiming && !kbAim && !gesture?.valid && phase==='ready'));
+    hidden('aim-readout',!(phase==='ready' && !aiming && (kbAim || gesture?.valid)));
+    if(state.surge){
+      const {warning,active,direction}=state.surge;
+      hidden('surge',!(warning || active));
+      if(warning||active)label('surge',(active?'Crowd bump ':'Crowd surge coming ')+(direction>0?'→':'←'));
+    }
+    if(feedbackTime>0 && phase!=='paused'){feedbackTime-=dt;if(feedbackTime<=0)hidden('feedback',true);}
+  }
+  refreshSettings(); label('title-best',format(best));
+  return {
+    render,event,settings,get view(){return panel || sim?.phase || 'title';},
+    ready(){wasReady=true;byId('play').disabled=false;hidden('load-line',true);},
+    loading(percent){byId('load-meter').value=clamp(percent,0,100);label('load-label','Tuning up · '+Math.round(percent)+'%');},
+    recover(){
+      if(panel!=='error')return;
+      closePanel(false);
+      if(sim?.phase==='paused')showPause();
+      else if(['clear','victory','failed'].includes(sim?.phase))showResult();
+      else (sim?.phase==='title'?byId('play'):area).focus({preventScroll:true});
+    },
+    fail(message){
+      showPanel('error','Stage unavailable','<p id="error-message"></p><div class="panel-actions"><button id="reload" class="primary">Try again</button></div>',false);
+      label('error-message',message);byId('reload').onclick=()=>location.reload();
+    },
+  };
+}

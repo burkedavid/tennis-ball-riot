@@ -1,95 +1,92 @@
-/**
- * Main Entry Point
- * Initializes the game and handles application lifecycle
- */
+import { Simulation } from './simulation.js';
 
-import { Game } from './game.js';
+import { createUI } from './ui.js';
+import { GigAudio } from './gig-audio.js';
 
-// Wait for DOM to be ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
-} else {
-  init();
+const audio = new GigAudio();
+let stage, ui, loaded = false, previous = 0, elapsed = 0, raf = 0;
+const sim = new Simulation(event => {
+  stage?.event(event.type);
+  ui?.event(event.type,event);
+  audio.event(event.type,event);
+  if (event.type === 'make' && !ui.settings.reduced) navigator.vibrate?.(18);
+});
+ui = createUI({
+  start: () => sim.start(),
+  menu: () => { stage?.cancelAim(); sim.menu(); },
+  next: () => sim.next(),
+  retry: () => sim.retry(),
+  pause: () => { sim.pause(); audio.suspend(); },
+  resume: () => { audio.unlock(); sim.resume(); },
+  throw: (angle,power) => sim.launch(angle,power),
+  aim: (angle,power) => stage?.aim(angle,power),
+  cancelAim: () => stage?.cancelAim(),
+  settings: settings => { audio.mute(settings.muted); stage?.settings(settings); },
+  unlockAudio: () => audio.unlock()
+});
+ui.render(sim);
+const canvas = document.getElementById('stage');
+function frame(now) {
+  if (!loaded || document.hidden) return;
+  raf = requestAnimationFrame(frame);
+  const delta = previous ? (now - previous) / 1000 : 1/60;
+  previous = now;
+  const limit = ui.settings.battery ? 1/30 : 0;
+  elapsed += delta;
+  if (elapsed + .0005 < limit) return;
+  const raw = elapsed;
+  elapsed = limit ? Math.max(0, (elapsed + .0005) % limit - .0005) : 0;
+  // Preserve the elapsed fraction when limiting display refresh without double ticking physics.
+  const dt = Math.min(.12,raw - elapsed);
+  sim.update(dt);
+  audio.tick(dt,['ready','flight','settling'].includes(sim.phase),sim.makes + 1 >= sim.level.goal);
+  ui.render(sim);
+  const songTime = audio.beat>0 && !ui.settings.muted ? audio.beat*.24 - audio.next : undefined;
+  stage.draw(dt,songTime);
+  if(sim.phase!=='paused')stage.observe(raw);
 }
-
-/**
- * Initialize the application
- */
-async function init() {
-  console.log('🎸 Iggy Pop Tennis Ball Riot 🎸');
-  console.log('Initializing game...');
-
-  // Show loading progress
-  updateLoadingProgress(30);
-
+function wake() {
+  cancelAnimationFrame(raf); previous = 0; elapsed = 0;
+  if (loaded && !document.hidden) raf = requestAnimationFrame(frame);
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { audio.suspend(); cancelAnimationFrame(raf); }
+  else wake();
+});
+window.addEventListener('resize', () => stage?.resize());
+canvas.addEventListener('webglcontextlost', event => {
+  event.preventDefault(); sim.pause(); loaded=false; cancelAnimationFrame(raf); audio.suspend();
+  ui.fail('Graphics were interrupted. Try again to reopen the stage. Your personal best is saved.');
+});
+canvas.addEventListener('webglcontextrestored', () => {
+  // Three restores its renderer first; wait until all context handlers have completed.
+  requestAnimationFrame(() => {
+    try {
+      stage.resize(); stage.draw(0); loaded=true; ui.recover(); wake();
+    } catch {
+      ui.fail('The graphics device could not restore the stage. Try again to reload.');
+    }
+  });
+});
+async function load() {
   try {
-    // Create game instance
-    const game = new Game();
-
-    updateLoadingProgress(100);
-
-    // Store globally for debugging
-    window.game = game;
-
-    console.log('✅ Game initialized successfully!');
-    console.log('Available debug commands:');
-    console.log('  window.game - Access game instance');
-    console.log('  window.game.score - View current score');
-    console.log('  window.game.currentLevel - View current level');
-  } catch (error) {
-    console.error('❌ Failed to initialize game:', error);
-    showError('Failed to load game. Please refresh the page.');
+    ui.loading(3);
+    const { Stage, loadingManager } = await import('./stage.js');
+    let progress=3;
+    loadingManager.onProgress = (_url,done,total) => {
+      progress=Math.max(progress,10 + 78 * done / total);ui.loading(progress);
+    };
+    stage = new Stage(canvas,sim);
+    stage.settings(ui.settings); audio.mute(ui.settings.muted);
+    await stage.ready;
+    ui.loading(94);
+    stage.draw(0);
+    loaded = true; ui.ready(); wake();
+    if (import.meta.env.PROD && 'serviceWorker' in navigator)
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+  } catch (e) {
+    console.error('Unable to open the stage',e);
+    ui.fail('The stage needs WebGL 2 and its local art files. Enable hardware acceleration and check your connection, then try again.');
   }
 }
-
-/**
- * Update loading progress bar
- * @param {number} percent - Progress percentage (0-100)
- */
-function updateLoadingProgress(percent) {
-  const progressBar = document.getElementById('loading-progress');
-  if (progressBar) {
-    progressBar.style.width = `${percent}%`;
-  }
-}
-
-/**
- * Show error message
- * @param {string} message
- */
-function showError(message) {
-  const loadingScreen = document.getElementById('loading-screen');
-  if (loadingScreen) {
-    loadingScreen.innerHTML = `
-      <div style="color: #ff0000; text-align: center; padding: 40px;">
-        <h2>Error</h2>
-        <p>${message}</p>
-        <button onclick="location.reload()" style="
-          margin-top: 20px;
-          padding: 10px 20px;
-          font-size: 16px;
-          background: #ff0000;
-          color: white;
-          border: none;
-          border-radius: 5px;
-          cursor: pointer;
-        ">Reload Page</button>
-      </div>
-    `;
-  }
-}
-
-// Handle window resize (optional - for responsive design)
-window.addEventListener('resize', () => {
-  // Could add responsive handling here if needed
-  console.log('Window resized');
-});
-
-// Prevent context menu on canvas (optional - better UX)
-document.addEventListener('contextmenu', (e) => {
-  if (e.target.tagName === 'CANVAS') {
-    e.preventDefault();
-  }
-});
-
-export { init };
+load();

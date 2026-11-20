@@ -1,142 +1,67 @@
-# 🎸 Iggy Pop Tennis Ball Riot 🎸
+﻿# Iggy Pop Tennis Ball Riot
 
-A chaotic rock concert tennis ball throwing game built with PixiJS, Matter.js, and GSAP.
+A mobile-first Three.js arcade game. Drag up and right from the front row to land a tennis ball in the drummer’s pint. The ten-song set goes from an open sound check to a crowded finale requiring eight makes from ten balls.
 
-## 🎮 Game Description
+![Portrait gameplay](review/phone-game.jpg)
 
-You're in the audience at a wild rock concert, trying to toss tennis balls into the drummer's glass while navigating obstacles, moving band members, and rowdy crowd bumps!
+## Play locally
 
-## ✨ Features
+Use Node.js 22 or 24 and npm.
 
-- **5 Progressive Levels** - From "Sound Check" to "Legendary Show"
-- **Physics-Based Gameplay** - Realistic ball throwing mechanics with Matter.js
-- **Dynamic Obstacles** - Singer moves across stage with different patterns
-- **Crowd Interactions** - Random crowd bumps affect your aim
-- **Scoring System** - Combos, bonuses, and trick shots
-- **Smooth Animations** - GSAP-powered visual effects
-
-## 🚀 Quick Start
-
-### Development
-
-```bash
-# Install dependencies
-npm install
-
-# Start dev server
+```sh
+npm ci
 npm run dev
+```
 
-# Build for production
+Open the local URL printed by Vite. A phone on the same Wi-Fi can use the server’s Network URL if your firewall permits the connection. Use the HTTPS Vercel deployment for home-screen installation and offline caching.
+
+## Deploy on Vercel
+
+Push the project files, including `public/`, both credits documents and `package-lock.json`, to your Git repository. Import the repository in Vercel with these settings. If this is an existing Vercel project linked to your branch, pushing the branch triggers its configured deployment.
+
+| Setting | Value |
+| --- | --- |
+| Root directory | Project root |
+| Framework preset | Vite |
+| Install command | `npm ci` |
+| Build command | `npm run build` |
+| Output directory | `dist` |
+
+All game assets, decoders and fonts ship with the static site. No API keys or backend services are required.
+
+## Controls and rules
+
+- Drag toward the arc and release. Drag distance sets power. A tap or an interrupted drag spends zero balls. Wait for the singer to pass and watch the directional crowd cue.
+- Switch to **Aim & Throw** in Settings for angle and power sliders. Keyboard players can use Left/Right for angle, Up/Down for power, Space to throw and Escape to pause.
+- Each make earns a base 100 points. Consecutive makes multiply that base by 1, 1.5, 2 and then 3. Clean shots add 50, a single bank adds 25 and multiple banks add 100. Clear a song in fewer than five throws for another 100.
+- Reach the target before the ball supply runs out. The last ball can win the song. Retrying restores the score at the entrance to that level. Personal best and settings are stored on the device.
+
+## Graphics and audio
+
+The stage uses WebGL2, meshopt-compressed human meshes, KTX2 textures, a studio HDR environment and original Web Audio music. The frontman is fictional. Imported art, modifications and licences are in [the asset credits](ASSETS.md) and [venue credits](VENUE_ASSETS.md).
+
+Auto quality measures rendered frames and samples GPU elapsed time when the driver exposes it. Low, Medium, High and Ultra adjust pixel density, shadows, haze and post-processing. High and Ultra add a depth-sensitive lens pass on supported hardware. Battery Saver caps the loop at 30fps. Reduce Effects suppresses motion accents and post-processing.
+
+## Verify a release
+
+```sh
+npm test
 npm run build
-
-# Preview production build
 npm run preview
 ```
 
-### Play the Game
+The simulation suite runs a legal winning strategy from Sound Check to the finale and tests scoring, collisions, last-ball outcomes, pause/resume, retries and refresh-rate independence. The production build creates a versioned service worker. After it finishes caching one visit, a subsequent offline visit can load the entire game.
 
-1. Open the game in your browser (default: http://localhost:3000)
-2. Click "Start Game"
-3. Adjust angle and power sliders
-4. Click "Throw Ball" to launch
-5. Make successful shots to progress through levels!
+Phone-viewport screenshots are in [review](review/). Physical handset performance depends on the device and browser.
 
-## 🎯 Gameplay Tips
+## Release checks
 
-- **Angle**: Aim higher for longer shots, lower for direct shots
-- **Power**: More power = faster/farther, but harder to control
-- **Timing**: Watch the singer's movement pattern
-- **Combos**: Consecutive successful shots multiply your score
-- **Crowd Bumps**: Expect random crowd bumps that shake your aim!
+The clean install and production build passed. The first playable load transferred 3.12 MB in Chromium with an empty cache. The complete static release occupies about 4.1 MB before HTTP compression.
 
-## 🛠️ Tech Stack
+Eight automated simulation tests passed, including 49 legal makes across the ten-song set. Chromium touch emulation and desktop WebKit each cleared Sound Check from the browser interface. The release also passed warm offline reload and play, visibility interruption, WebGL context recovery, rotation and rapid retry checks.
 
-- **PixiJS** - 2D rendering engine
-- **Matter.js** - 2D physics engine
-- **GSAP** - Animation library
-- **Vite** - Build tool and dev server
+Three reviewers examined the build. The interaction review led to better keyboard focus, screen-reader turn summaries and protection against a second finger cancelling a throw. The visual review led to a rigged anatomical body, clearer costumes, a darker crowd pit and closer portrait framing. The implementation review led to collision-matched stage geometry, reused trajectory buffers, asset loading progress and a corrected offline cache.
 
-## 📦 Project Structure
+At 390×844 with DPR 1.5 on Windows Chromium and Intel Arc Pro graphics, each manual quality tier had a median frame interval between 16.5 and 16.8 ms in a 40-frame sample. A separate 4× CPU-throttled run with DPR 2 produced a 24.8 ms median and 34.8 ms 90th percentile over ten seconds. Fifty retries increased post-GC JS heap from 8.20 to 8.68 MB. These are desktop emulation measurements. Actual iPhone and Android frame rates, thermal behaviour and battery life require handset tests.
 
-```
-tennis-ball-gig/
-├── src/
-│   ├── config/          # Game configuration
-│   │   ├── constants.js
-│   │   └── levelData.js
-│   ├── entities/        # Game entities
-│   │   ├── Ball.js
-│   │   ├── Singer.js
-│   │   ├── Glass.js
-│   │   └── Drummer.js
-│   ├── animations.js    # GSAP animation helpers
-│   ├── particles.js     # Particle effects system
-│   ├── physics.js       # Matter.js physics wrapper
-│   ├── ui.js           # UI management
-│   ├── utils.js        # Utility functions
-│   ├── game.js         # Main game logic
-│   └── main.js         # Entry point
-├── index.html
-├── package.json
-└── vite.config.js
-```
-
-## 🎨 Game Architecture
-
-### Phase 1 (Current) - Core Prototype
-- ✅ Basic throwing mechanics
-- ✅ Singer obstacle movement
-- ✅ Crowd bump system
-- ✅ Win/loss detection
-- ✅ UI controls (angle, power, balls)
-- ✅ 5 progressive levels
-- ✅ Scoring system
-- ✅ Particle effects
-
-### Future Phases
-- Phase 2: Enhanced visual effects and polish
-- Phase 3: Special ball types and power-ups
-- Phase 4: Additional game modes (Endless, Practice)
-- Phase 5: Sound effects and music
-
-## 🎮 Controls
-
-- **Mouse**: Click and drag sliders to adjust angle and power
-- **Click "Throw Ball"**: Launch the ball
-- **Pause Button**: Pause the game anytime
-
-## 🏆 Scoring
-
-- **Successful Shot**: 100 points
-- **No-Bounce Shot**: +50 bonus
-- **Bank Shot (1 bounce)**: +25 bonus
-- **Trick Shot (2+ bounces)**: +100 bonus
-- **Combos**: 1.5x → 2x → 3x multiplier
-- **Efficient Bonus**: +100 for using less than 5 balls
-
-## 🌐 Deployment
-
-This game is ready to deploy on Vercel, Netlify, or any static hosting:
-
-```bash
-# Build for production
-npm run build
-
-# The dist/ folder contains the production build
-```
-
-## 📝 License
-
-This project is created for educational and entertainment purposes.
-
-## 🎪 Credits
-
-Designed and developed as a playable web game showcasing:
-- Modern JavaScript game development
-- Physics-based gameplay mechanics
-- Responsive UI design
-- Particle effects and animations
-
----
-
-**Have fun and rock on!** 🎸🎾
+[Watch a touch-controlled throw in the production build](review/concert-gameplay.webm).
